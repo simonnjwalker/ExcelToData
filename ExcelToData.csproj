@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <NoWarn>CS8981</NoWarn>
+    <PackageId>Seamlex.Utilities.ExcelToData</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Simon Walker</Authors>
+    <Company>Seamlex</Company>
+    <Description>Converts to-and-from simple Excel files.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>ExcelToData ExcelToDataTable ExcelToDataSet DataSetToExcel DataTableToExcel DataTableToExcel ExcelToList cs seamlex seamlex.net</PackageTags>
+    <PackageProjectUrl>https://www.nuget.org/packages/Seamlex.Utilities.ExcelToData</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/simonnjwalker/ExcelToData</RepositoryUrl>
+    <PackageIcon>seamlex.png</PackageIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.19.0" />
+    <None Include="seamlex.png" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="LICENSE" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+</Project>
