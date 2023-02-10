@@ -11,26 +11,16 @@ internal class Program {
     string output = @"c:\temp\test1.xlsx";
     string output2 = @"c:\temp\test2.xlsx";
     var xlsx = new Seamlex.Utilities.ExcelToData();
-    var clients = new List();
-    clients.Add(new MyClass() { IsValid = false, DollarAmount = 123.45,
-                                StartDate = DateTime.Now.AddDays(7),
-                                EndDate = DateTime.Now.AddMonths(3),
-                                FirstName = "Asha", LastName = "Albatross" });
-    clients.Add(new MyClass() { IsValid = true, DollarAmount = 400.00,
-                                StartDate = DateTime.Now.AddDays(14),
-                                EndDate = DateTime.Now.AddMonths(4),
-                                FirstName = "Bianca", LastName = "Best" });
-    clients.Add(new MyClass() { IsValid = false, DollarAmount = 100.00,
-                                StartDate = DateTime.Now.AddDays(21),
-                                EndDate = DateTime.Now.AddMonths(5),
-                                FirstName = "Carl", LastName = "Cranston" });
+    var clients = new List<MyClass>(){
+        new MyClass() { IsValid = false, DollarAmount = 123.45, StartDate = DateTime.Now.AddDays(7), EndDate = DateTime.Now.AddMonths(3), FirstName = "Asha", LastName = "Albatross" },
+        new MyClass() { IsValid = true, DollarAmount = 400.00, StartDate = DateTime.Now.AddDays(14), EndDate = DateTime.Now.AddMonths(4),FirstName = "Bianca", LastName = "Best" },
+        new MyClass() { IsValid = false, DollarAmount = 100.00, StartDate = DateTime.Now.AddDays(21), EndDate = DateTime.Now.AddMonths(5), FirstName = "Carl", LastName = "Cranston" }
+    };
+
     // this changes default behaviour of the client which outputs as text to all
-    // fields comment these four lines and the console output at the end will be
-    // identical
-    var defaults = xlsx.GetDefaults();
-    defaults.ColumnsToDateTime.Add("StartDate");
-    defaults.ColumnsToNumber.Add("DollarAmount");
-    xlsx.SetDefaults(defaults);
+    // fields comment these four lines and the console output at the end will be identical
+    xlsx.GetDefaults().ColumnsToDateTime.Add("StartDate");
+    xlsx.GetDefaults().ColumnsToNumber.Add("DollarAmount");
 
     // this creates an Excel file from a .NET List<T>
     xlsx.ToExcelFile(clients, output);
@@ -66,3 +56,5 @@ public class MyClass {
   public string FirstName = "";
   public string LastName = "";
 }
+
+
