@@ -6,11 +6,17 @@ Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 
 # Sample code
 
+// this is a dotnet 7 console application
 internal class Program {
   private static async Task Main(string[] args) {
+    // set sample file names (MS Windows)
     string output = @"c:\temp\test1.xlsx";
     string output2 = @"c:\temp\test2.xlsx";
+
+    // instantiate this class
     var xlsx = new Seamlex.Utilities.ExcelToData();
+
+    // create some demo data in a List<T>
     var clients = new List<MyClass>(){
         new MyClass() { IsValid = false, DollarAmount = 123.45, StartDate = DateTime.Now.AddDays(7), EndDate = DateTime.Now.AddMonths(3), FirstName = "Asha", LastName = "Albatross" },
         new MyClass() { IsValid = true, DollarAmount = 400.00, StartDate = DateTime.Now.AddDays(14), EndDate = DateTime.Now.AddMonths(4),FirstName = "Bianca", LastName = "Best" },
@@ -48,6 +54,8 @@ internal class Program {
     return;
   }
 }
+  
+// demo class with a combination of fields and properties
 public class MyClass {
   public bool IsValid = false;
   public double DollarAmount { get; set; }
