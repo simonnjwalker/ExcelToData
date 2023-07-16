@@ -1,10 +1,4 @@
-﻿using System.Data;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using System.Reflection;
-using System.ComponentModel;
-using System.Globalization;
+﻿using System.ComponentModel;
 
 namespace Seamlex.Utilities
 {

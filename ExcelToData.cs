@@ -5,6 +5,10 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using System.Reflection;
 using System.ComponentModel;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+
+#pragma warning disable CS8600, CS8604, CS8601, CS8632
 
 namespace Seamlex.Utilities
 {
@@ -23,13 +27,27 @@ namespace Seamlex.Utilities
 
         private ExcelToDataOptions DefaultOptions;
 
-        public void SetDefaults(ExcelToDataOptions handlerOptions)
+        public void SetOptions(ExcelToDataOptions handlerOptions)
         {
             this.DefaultOptions = handlerOptions;
         }
-        public ExcelToDataOptions GetDefaults()
+        public ExcelToDataOptions GetOptions()
         {
             return this.DefaultOptions;
+        }
+        public ExcelToDataOptions GetOptionsClone()
+        {
+            // 2022-07-14 1.0.1 #2 SNJW added the Clone() method to the options class
+            // this seemed better than adding Newtonsoft
+            // I have set the Clone() method to internal as this method is preferred
+            return GetOptionsClone(this.DefaultOptions);
+        }
+        public ExcelToDataOptions GetOptionsClone(ExcelToDataOptions handlerOptions)
+        {
+            // 2022-07-14 1.0.1 #2 SNJW added the Clone() method to the options class
+            // this seemed better than adding Newtonsoft
+            // I have set the Clone() method to internal as this method is preferred
+            return handlerOptions.Clone();
         }
         private ExcelToDataOptions BaseDefaults()
         {
@@ -37,6 +55,7 @@ namespace Seamlex.Utilities
             {
                 MaxRows = 65535,
                 UseHeadings = true,
+                ComplexToJson = true,
                 IntegerRoundingAction = ExcelToDataOptions.IntegerRounding.Round,
                 InvalidNumberAction = ExcelToDataOptions.InvalidNumber.Zero,
                 LargeNumberAction = ExcelToDataOptions.LargeNumber.Max,
@@ -56,7 +75,7 @@ namespace Seamlex.Utilities
                                      "dd MMM yyyy", "MMM dd yyyy", "ddd, dd MMM yyyy", "ddd, MMM dd yyyy", "dddd, dd MMM yyyy",
                                      "dddd, MMM dd yyyy", "yyyyMMddTHHmmss", "yyyyMMdd HHmmss", "yyyy-MM-ddTHH:mm:ss",
                                      "yyyy-MM-dd HH:mm:ss"},
-                DateTimeCheckCultures = new List<CultureInfo>{ CultureInfo.GetCultureInfo("en-AU")},
+                DateTimeCheckCultures = new List<System.Globalization.CultureInfo>{ CultureInfo.GetCultureInfo("en-AU")},
                 ColumnsToDateTime = new List<string>(),
                 ColumnsToNumber = new List<string>()
             };
@@ -153,24 +172,24 @@ namespace Seamlex.Utilities
         /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
-        public List<T> ToDataTable<T>([Description("Full path and name of the Excel XLSX document.")]string filePath) where T : new()
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath) where T : new()
         {
-            return this.ToDataTable<T>(filePath,"",this.DefaultOptions);
+            return this.ToListData<T>(filePath,"",this.DefaultOptions);
         }
         /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
-        public List<T> ToDataTable<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName) where T : new()
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName) where T : new()
         {
-            return this.ToDataTable<T>(filePath,sheetName,this.DefaultOptions);
+            return this.ToListData<T>(filePath,sheetName,this.DefaultOptions);
         }
         /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
         [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
-        public List<T> ToDataTable<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
             byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
@@ -200,7 +219,9 @@ namespace Seamlex.Utilities
             int sheetNumber = -1;
             for(int i = 0; i < dataSet.Tables.Count; i++)
             {
-                if(dataSet.Tables[i]?.TableName == tableName)
+                // 2023-07-15 SNJW MS Excel worksheet names are case-insensitve
+                // if(dataSet.Tables[i]?.TableName == tableName)
+                if(dataSet.Tables[i]?.TableName.Trim().ToLower() == tableName.Trim().ToLower())
                 {
                     sheetNumber = i;
                     break;
@@ -1333,6 +1354,7 @@ Be named "History". This is a reserved word Excel uses internally.
             bool useHeadings = handlerOptions?.UseHeadings ?? this.DefaultOptions.UseHeadings;
             int maxRows = handlerOptions?.MaxRows ?? this.DefaultOptions.MaxRows;
             string tableName = handlerOptions?.DefaultTableName ?? this.DefaultOptions.DefaultTableName;
+
             DataTable dataTable = new DataTable(typeof(T).Name);
 
             //Get all the properties
@@ -1378,6 +1400,7 @@ Be named "History". This is a reserved word Excel uses internally.
                 for (int i = Props.Length; i < Props.Length+Fields.Length; i++)
                 {
                     //inserting property values to datatable rows
+                    // if this is a CLR type, get it as a string, if not, get it as Json
                     string itemvalue = Fields[i-Props.Length]?.GetValue(item)?.ToString() ?? "";
                     if(itemvalue == "")
                     {
@@ -1385,18 +1408,51 @@ Be named "History". This is a reserved word Excel uses internally.
                     }
                     else
                     {
+                        // 2023-07-14 SNJW Error where List<T> has non-CLR types #3
+                        // The values[] array is all strings - it's just convienient for it to be the object type to add 
+                        // directly into the DataTable
+                        // however if it's a non-CLR type it won't be Json here
+                        Type fieldtype = Fields[i-Props.Length].FieldType;
 
-                        string checkitem = (this.ParseExcel(itemvalue,Fields[i-Props.Length].FieldType,handlerOptions)).ToString();
-
-                        // string checkitem = this.ShapeText(itemvalue,Fields[i-Props.Length].FieldType,handlerOptions);
-                        if(checkitem == "" && ( Fields[i-Props.Length].GetType() != typeof(string)))
+                        if(!this.IsCLRType(fieldtype))
                         {
-                            values[i] = "";
+                            // 2023-07-14 SNJW if this is a non-CLR type then either set it to JSON or to blank
+                            if(handlerOptions?.ComplexToJson ?? this.DefaultOptions.ComplexToJson)
+                            {
+                                object? nonclr = Fields[i-Props.Length]?.GetValue(item);
+                                values[i] = "{}";
+                                if(nonclr != null)
+                                {
+                                    try
+                                    {
+                                        values[i] = JsonConvert.SerializeObject(nonclr, fieldtype, null);
+                                    }
+                                    catch
+                                    {
+                                        
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                values[i] = "";
+                            }
                         }
                         else
                         {
-                            values[i] = checkitem;
+                            string checkitem = (this.ParseExcel(itemvalue,Fields[i-Props.Length].FieldType,handlerOptions)).ToString();
+
+                            // string checkitem = this.ShapeText(itemvalue,Fields[i-Props.Length].FieldType,handlerOptions);
+                            if(checkitem == "" && ( Fields[i-Props.Length].GetType() != typeof(string)))
+                            {
+                                values[i] = "";
+                            }
+                            else
+                            {
+                                values[i] = checkitem;
+                            }
                         }
+
                     }
                 }
                 dataTable.Rows.Add(values);
@@ -1526,7 +1582,16 @@ Be named "History". This is a reserved word Excel uses internally.
                     }
                     if(sourceValue != null)
                     {
-                        destValue = this.ParseExcel(sourceValue, destType, handlerOptions);
+                        // if a non-CLR type, check whether it's a JSON object
+                        if(!this.IsCLRType(destType) && (handlerOptions?.ComplexToJson ?? this.DefaultOptions.ComplexToJson))
+                        {
+                            destValue = this.ParseExcelComplex(sourceValue, destType, handlerOptions);
+                        }
+                        else
+                        {
+                            destValue = this.ParseExcel(sourceValue, destType, handlerOptions);
+                        }
+
                         if(isProperty)
                         {
                             properties[i].SetValue(item, destValue);
@@ -1534,7 +1599,7 @@ Be named "History". This is a reserved word Excel uses internally.
                         else
                         {
                             fields[i-propertyTotal].SetValue(item, destValue);
-                        }              
+                        }
                     }
                 }
 
@@ -1657,6 +1722,22 @@ Be named "History". This is a reserved word Excel uses internally.
                 {
                     destValue = this.ParseExcelBoolNullable(sourceValue, handlerOptions);
                 }
+                else if(!this.IsCLRType(destType))
+                {
+                    // 2023-07-14 SNJW if this is a non-CLR type then either set it to JSON or to blank
+                    if(handlerOptions?.ComplexToJson ?? this.DefaultOptions.ComplexToJson)
+                    {
+                        // if(handlerOptions?.ComplexNullable ?? this.DefaultOptions.ComplexNullable)
+                        //     destValue = this.ParseExcelComplexNullable(sourceValue, destType, handlerOptions);
+                        // string checkJson = JsonConvert.SerializeObject(sourceValue, destType, null);
+                        object checkValue = this.ParseExcelComplex(sourceValue, destType, handlerOptions);
+                        destValue = JsonConvert.SerializeObject(checkValue, destType, null);
+                        // destValue = this.ParseExcelComplex(sourceValue, destType, handlerOptions);
+                        // destValue = this.ParseExcelJson(checkJson, destType, handlerOptions);
+                    }
+
+                    // TO DO put code that instantiates a default object if the user needs this and the object cannot be null
+                }
                 else
                 {
                     try
@@ -1672,6 +1753,104 @@ Be named "History". This is a reserved word Excel uses internally.
             }
         }
 
+
+        /// <summary>Parses an Excel data value formatted in JSON and return it as the specified non-CLR type.</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="destType">Class name.</param>
+        [Description("Parses an Excel data value that is formatted in JSON and returns it if well-formed.")]
+        public object ParseExcelComplex([Description("Source value from Excel.")]object sourceValue, [Description("Target class/type.")]Type destType)
+        {
+            return this.ParseExcelComplex(sourceValue,destType,this.DefaultOptions);
+        }
+
+        /// <summary>Parses an Excel data value formatted in JSON and return it as the specified non-CLR type.</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="destType">Class name.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Parses an Excel data value that is formatted in JSON and returns it if well-formed.")]
+        public object ParseExcelComplex([Description("Source value from Excel.")]object sourceValue, [Description("Target class/type.")]Type destType,[Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            try
+            {
+                object check = JsonConvert.DeserializeObject(sourceValue.ToString(), destType);
+                return check;
+            }
+            catch
+            {
+            }
+            try
+            {
+                Assembly assembly = destType.Assembly;
+                object check = (object)assembly.CreateInstance(destType.FullName);
+                return check;
+            }
+            catch
+            {
+            }
+            return new Object();
+        }
+
+        /// <summary>Parses an Excel data value that is formatted in JSON and returns it if well-formed.</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="destType">Class name.</param>
+        [Description("Parses an Excel data value that is formatted in JSON and returns it if well-formed.")]
+        public string ParseExcelJson([Description("Source value from Excel.")]object sourceValue, [Description("Target class/type.")]Type destType)
+        {
+            return this.ParseExcelJson(sourceValue,destType,this.DefaultOptions);
+        }
+
+        /// <summary>Parses an Excel data value that is formatted in JSON and returns it if well-formed.</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="destType">Class name.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Parses an Excel data value that is formatted in JSON and returns it if well-formed.")]
+        public string ParseExcelJson([Description("Source value from Excel.")]object sourceValue, [Description("Target class/type.")]Type destType,[Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            if(sourceValue == null)
+                return "{}";
+            string json = (sourceValue ?? "").ToString();
+            if(!this.IsValidJson(json))
+                return "{}";
+            string output = "{}";
+            try
+            {
+                object check = JsonConvert.DeserializeObject(json, destType);
+                output = JsonConvert.SerializeObject(check);
+            }
+            catch
+            {
+                output = "{}";
+            }
+            return output;
+        }
+
+        private bool IsValidJson(string strInput)
+        {
+            if (string.IsNullOrWhiteSpace(strInput))
+                return false;
+            strInput = strInput.Trim();
+            bool success = false;
+            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || //For object
+                (strInput.StartsWith("[") && strInput.EndsWith("]"))) //For array
+            {
+                try
+                {
+                    var obj = JToken.Parse(strInput);
+                    success = true;
+                }
+                catch
+                {
+                    success = false;
+                }
+            }
+            return success;
+        }
+
+        public bool IsCLRType(Type type)
+        {
+            var fullname = type.Assembly.FullName;
+            return (fullname??"").StartsWith("System.Private.CoreLib");
+        }        
         /// <summary>Parses an Excel data value and returns its true/false/null status.</summary>
         /// <param name="sourceValue">Source value from Excel.</param>
         [Description("Parses an Excel data value and returns its true/false/null status.")]

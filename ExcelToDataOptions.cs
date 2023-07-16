@@ -1,9 +1,4 @@
-﻿using System.Data;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using System.Reflection;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
 
 namespace Seamlex.Utilities
@@ -12,6 +7,11 @@ namespace Seamlex.Utilities
     [Description("Options for controlling Seamlex.Utilities.ExcelToData.")]
     public class ExcelToDataOptions
     {
+
+        ///<summary>Convert non-CLR types to JSON.</summary>
+        [Description("Convert non-CLR types into JSON.")]
+        public bool ComplexToJson {get;set;}
+
         ///<summary>Maximum number of rows to be processed.</summary>
         [Description("Maximum number of rows to be processed.")]
         public int MaxRows {get;set;}
@@ -145,6 +145,12 @@ namespace Seamlex.Utilities
             Ceiling,
             Floor,
             Round
+        }
+        internal ExcelToDataOptions Clone()
+        {
+            // 2022-07-14 1.0.1 #2 SNJW added the Clone() method to the options class
+            // and the GetDetaultsClone() in the main class
+            return (ExcelToDataOptions)this.MemberwiseClone();
         }
     }    
 }
