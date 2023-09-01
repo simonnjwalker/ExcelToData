@@ -4,7 +4,7 @@ Convert to-and-from simple Excel files and .NET data objects
 # Usage
 Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 
-# version hoistory
+# Version History
 
 1.0.0 Initial release
 
@@ -23,11 +23,18 @@ Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 - this is the default behaviour, change it with:
 xlsx.GetOptions().ComplexToJson = false;
 
+1.0.2 Fixed columns and allowed indexes for sheets
+
+4 - fixed to check header row for merged, missing, and duplicated field names
+https://github.com/simonnjwalker/ExcelToData/issues/4
+
+5 - added sheet indexes to ToDataTable()
+https://github.com/simonnjwalker/ExcelToData/issues/5
+
+
 
 
 # Sample code
-
-
 
 // this is a dotnet 7 console application
 #pragma warning disable CS1998

@@ -5,7 +5,7 @@
     <Nullable>disable</Nullable>
     <NoWarn>CS8981</NoWarn>
     <PackageId>Seamlex.Utilities.ExcelToData</PackageId>
-    <PackageVersion>1.0.1</PackageVersion>
+    <PackageVersion>1.0.2</PackageVersion>
     <Authors>Simon Walker</Authors>
     <Company>Seamlex</Company>
     <Description>Converts to-and-from simple Excel files.</Description>
@@ -14,6 +14,7 @@
     <PackageProjectUrl>https://www.nuget.org/packages/Seamlex.Utilities.ExcelToData</PackageProjectUrl>
     <RepositoryUrl>https://github.com/simonnjwalker/ExcelToData</RepositoryUrl>
     <PackageIcon>seamlex.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.19.0" />

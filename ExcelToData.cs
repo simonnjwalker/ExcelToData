@@ -8,7 +8,7 @@ using System.Globalization;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-#pragma warning disable CS8600, CS8604, CS8601, CS8632
+#pragma warning disable CS8600, CS8604, CS8601, CS8603, CS8602, CS8618, CS8625, CS8632
 
 namespace Seamlex.Utilities
 {
@@ -71,40 +71,42 @@ namespace Seamlex.Utilities
                 DateTimeCheckSourceFormat  = true,
                 DateTimeCheckFixed = true,
                 DateTimeCheckFormats = new string[]{"yyyy-MM-dd", "dd-MM-yyyy", "MM-dd-yyyy", "dd/MM/yyyy", "MM/dd/yyyy", "yyyy/MM/dd",
-                                     "dd.MM.yyyy", "MM.dd.yyyy", "yyyy.MM.dd", "ddMMMyyyy", "dd-MMM-yyyy", "MMM-dd-yyyy",
-                                     "dd MMM yyyy", "MMM dd yyyy", "ddd, dd MMM yyyy", "ddd, MMM dd yyyy", "dddd, dd MMM yyyy",
-                                     "dddd, MMM dd yyyy", "yyyyMMddTHHmmss", "yyyyMMdd HHmmss", "yyyy-MM-ddTHH:mm:ss",
-                                     "yyyy-MM-dd HH:mm:ss"},
+                                        "dd.MM.yyyy", "MM.dd.yyyy", "yyyy.MM.dd", "ddMMMyyyy", "dd-MMM-yyyy", "MMM-dd-yyyy",
+                                        "dd MMM yyyy", "MMM dd yyyy", "ddd, dd MMM yyyy", "ddd, MMM dd yyyy", "dddd, dd MMM yyyy",
+                                        "dddd, MMM dd yyyy", "yyyyMMddTHHmmss", "yyyyMMdd HHmmss", "yyyy-MM-ddTHH:mm:ss",
+                                        "yyyy-MM-dd HH:mm:ss"},
                 DateTimeCheckCultures = new List<System.Globalization.CultureInfo>{ CultureInfo.GetCultureInfo("en-AU")},
                 ColumnsToDateTime = new List<string>(),
                 ColumnsToNumber = new List<string>()
             };
         }
 
-        /// <summary>Convert the first column in single worksheet inside an Excel file into a list of strings.</summary>
+        /// <summary>Last error message if one occurred during processing.</summary>
+        [Description("Last error message if one occurred during processing.")]
+        public string ErrorMessage = "";
+
+
+        /// <summary>Convert the first column of the first worksheet in an Excel file into a list of strings.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of strings.")]
+        [Description("Convert the first column of the first worksheet in an Excel file into a list of strings.")]
         public List<string> ToListDataString([Description("Full path and name of the Excel XLSX document.")]string filePath)
         {
             return this.ToListDataString(filePath,"",this.DefaultOptions);
         }
-        /// <summary>Last error message if one occurred during processing.</summary>
-        [Description("Last error message if one occurred during processing.")]
-        public string ErrorMessage = "";
-        /// <summary>Convert the first column in single worksheet inside an Excel file into a list of strings.</summary>
+        /// <summary>Convert the first column of a worksheet in an Excel file into a list of strings.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of strings.")]
+        [Description("Convert the first column of a worksheet in an Excel file into a list of strings.")]
         public List<string> ToListDataString([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName)
         {
             return this.ToListDataString(filePath,sheetName,this.DefaultOptions);
         }
-        /// <summary>Convert the first column in single worksheet inside an Excel file into a list of strings.</summary>
+        /// <summary>Convert the first column of the first worksheet in an Excel file into a list of strings.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of strings.")]
+        [Description("Convert the first column of the first worksheet in an Excel file into a list of strings.")]
         public List<string> ToListDataString([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
         {
             ErrorMessage = "";
@@ -129,24 +131,24 @@ namespace Seamlex.Utilities
 
         /// <summary>Convert the first column in single worksheet inside an Excel file into a list of integers.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of integers.")]
+        [Description("Convert the first column of the first worksheet in an Excel file into a list of integers.")]
         public List<int> ToListDataInt32([Description("Full path and name of the Excel XLSX document.")]string filePath)
         {
             return this.ToListDataInt32(filePath,"",this.DefaultOptions);
         }
-        /// <summary>Convert the first column in single worksheet inside an Excel file into a list of integers.</summary>
+        /// <summary>Convert the first column of a worksheet in an Excel file into a list of integers.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of integers.")]
+        [Description("Convert the first column of a worksheet in an Excel file into a list of integers.")]
         public List<int> ToListDataInt32([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName)
         {
             return this.ToListDataInt32(filePath,sheetName,this.DefaultOptions);
         }
-        /// <summary>Convert the first column in single worksheet inside an Excel file into a list of integers.</summary>
+        /// <summary>Convert the first column of a worksheet in an Excel file into a list of integers.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert the first column in single worksheet inside an Excel file into a list of integers.")]
+        [Description("Convert the first column of a worksheet in an Excel file into a list of integers.")]
         public List<int> ToListDataInt32([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
         {
             ErrorMessage = "";
@@ -162,38 +164,43 @@ namespace Seamlex.Utilities
                 ErrorMessage = $"No sheets were found in '{filePath}'";
                 return listData;
             }
-            int sheetNumber = this.GetTableIndex(dataSet,sheetName);
-            if(sheetNumber < 0)
-                sheetNumber = 0;
-            listData.AddRange(this.ToListDataInt32(dataSet.Tables[sheetNumber], handlerOptions));
+            int sheetIndex = 0;
+            if(sheetName!="")
+                sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            if(sheetIndex == -1)
+            {
+                this.ErrorMessage = $"Excel file '{filePath}' does not contain worksheet '{sheetName}'";
+                return listData;
+            }
+            listData.AddRange(this.ToListDataInt32(dataSet.Tables[sheetIndex], handlerOptions));
             return listData;
         }
 
-        /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
+        /// <summary>Convert the first worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
+        [Description("Convert the first worksheet in an Excel file into a list of type 'T'.")]
         public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath) where T : new()
         {
             return this.ToListData<T>(filePath,"",this.DefaultOptions);
         }
-        /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
+        /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
-        [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
+        [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
         public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName) where T : new()
         {
             return this.ToListData<T>(filePath,sheetName,this.DefaultOptions);
         }
-        /// <summary>Convert a single worksheet inside an Excel file into a list of type 'T'.</summary>
+        /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert a single worksheet inside an Excel file into a list of type 'T'.")]
+        [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
         public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
             byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
-            List<T> listData = new List<T>();
+            List<T> listData = new();
             if(ErrorMessage!="")
                 return listData;
             DataSet dataSet = this.ToDataSet(byteArray, handlerOptions);
@@ -204,59 +211,124 @@ namespace Seamlex.Utilities
                 ErrorMessage = $"No sheets were found in '{filePath}'";
                 return listData;
             }
-            int sheetNumber = this.GetTableIndex(dataSet,sheetName);
-            if(sheetNumber < 0)
-                sheetNumber = 0;
-            listData.AddRange(this.ToListData<T>(dataSet.Tables[sheetNumber], handlerOptions));
+            int sheetIndex = 0;
+            if(sheetName!="")
+                sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            if(sheetIndex == -1)
+            {
+                this.ErrorMessage = $"Excel file '{filePath}' does not contain worksheet '{sheetName}'";
+                return listData;
+            }
+            listData.AddRange(this.ToListData<T>(dataSet.Tables[sheetIndex], handlerOptions));
             return listData;
         }
 
-        [Description("Find the index of a DataTable contained in a DataSet from its name.")]
-        private int GetTableIndex([Description("DataSet to search.")]DataSet dataSet, [Description("Name of the DataTable.")]string tableName)
-        {
-            if(tableName=="")
-                return -1;
-            int sheetNumber = -1;
-            for(int i = 0; i < dataSet.Tables.Count; i++)
-            {
-                // 2023-07-15 SNJW MS Excel worksheet names are case-insensitve
-                // if(dataSet.Tables[i]?.TableName == tableName)
-                if(dataSet.Tables[i]?.TableName.Trim().ToLower() == tableName.Trim().ToLower())
-                {
-                    sheetNumber = i;
-                    break;
-                }
-            }
-            return sheetNumber;
-        }
 
-        /// <summary>Convert a binary data Excel file into a list of type 'T'.</summary>
-        /// <param name="byteArray">Excel binary data to convert.</param>
-        [Description("Convert a binary data Excel file into a list of type 'T'.")]
-        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray) where T : new()
+
+        /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
+        /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
+        /// <param name="sheetIndex">Zero=based index Number of the Excel worksheet. If blank will use the first.</param>
+        [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath,[Description("Zero-based index of the Excel worksheet.")]int sheetIndex) where T : new()
         {
-            return ToListData<T>(byteArray,this.DefaultOptions);
+            return this.ToListData<T>(filePath,sheetIndex,this.DefaultOptions);
         }
-        /// <summary>Convert a binary data Excel file into a list of type 'T'.</summary>
-        /// <param name="byteArray">Excel binary data to convert.</param>
+        /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
+        /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
+        /// <param name="sheetIndex">Zero-based index of the Excel worksheet.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert a binary data Excel file into a list of type 'T'.")]
-        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Zero-based index of the Excel worksheet.")]int sheetIndex, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
-            List<T> listData = new List<T>();
+            byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
+            List<T> listData = new();
+            if(ErrorMessage!="")
+                return listData;
             DataSet dataSet = this.ToDataSet(byteArray, handlerOptions);
             if(ErrorMessage!="")
                 return listData;
             if(dataSet.Tables.Count==0)
             {
-                ErrorMessage = $"No sheets were found in DataSet";
+                ErrorMessage = $"No sheets were found in '{filePath}'";
+                return listData;
+            }
+            if(sheetIndex < 0 || sheetIndex >= dataSet.Tables.Count)
+            {
+                this.ErrorMessage = $"Excel file '{filePath}' does not contain a worksheet at index {sheetIndex}";
+                return listData;
+            }
+            listData.AddRange(this.ToListData<T>(dataSet.Tables[sheetIndex], handlerOptions));
+            return listData;
+        }
+
+
+        /// <summary>Convert the first worksheet inside a binary data Excel file into a list of type 'T'.</summary>
+        /// <param name="byteArray">Excel binary data to convert.</param>
+        /// 
+        [Description("Convert the first worksheet inside a binary data Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray) where T : new()
+        {
+            return ToListData<T>(byteArray,this.DefaultOptions);
+        }
+        /// <summary>Convert the first worksheet inside a binary data Excel file into a list of type 'T'.</summary>
+        /// <param name="byteArray">Excel binary data to convert.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert the first worksheet inside a binary data Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        {
+            ErrorMessage = "";
+            List<T> listData = new();
+            DataSet dataSet = this.ToDataSet(byteArray, handlerOptions);
+            if(ErrorMessage!="")
+                return listData;
+            if(dataSet.Tables.Count==0)
+            {
+                ErrorMessage = $"No sheets were found in Excel binary data";
                 return listData;
             }
             listData.AddRange(this.ToListData<T>(dataSet.Tables[0], handlerOptions));
             return listData;
         }
 
+
+        /// <summary>Convert a worksheet inside a binary data Excel file into a list of type 'T'.</summary>
+        /// <param name="byteArray">Excel binary data to convert.</param>
+        /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
+        [Description("Convert a worksheet inside a binary data Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName) where T : new()
+        {
+            return ToListData<T>(byteArray,this.DefaultOptions);
+        }
+        /// <summary>Convert a worksheet inside a binary data Excel file into a list of type 'T'.</summary>
+        /// <param name="byteArray">Excel binary data to convert.</param>
+        /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a worksheet inside a binary data Excel file into a list of type 'T'.")]
+        public List<T> ToListData<T>([Description("Excel binary data.")]byte[] byteArray, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        {
+            ErrorMessage = "";
+            List<T> listData = new();
+            DataSet dataSet = this.ToDataSet(byteArray, handlerOptions);
+            if(ErrorMessage!="")
+                return listData;
+            if(dataSet.Tables.Count==0)
+            {
+                ErrorMessage = $"No sheets were found in Excel binary data";
+                return listData;
+            }
+            int sheetIndex = 0; 
+            if(sheetName!="")
+                sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            if(sheetIndex == -1)
+            {
+                this.ErrorMessage = $"Excel binary data does not contain worksheet '{sheetName}'";
+                return listData;
+            }
+
+            listData.AddRange(this.ToListData<T>(dataSet.Tables[sheetIndex], handlerOptions));
+            return listData;
+        }
         /// <summary>Convert the first DataTable contained in a DataSet into a list of type 'T'.</summary>
         /// <param name="dataSet">DataSet containing the DataTable to convert.</param>
         [Description("Convert the first DataTable contained in a DataSet into a list of type 'T'.")]
@@ -280,18 +352,22 @@ namespace Seamlex.Utilities
         public List<T> ToListData<T>([Description("DataSet containing the DataTable to convert.")]DataSet dataSet, [Description("DataTable name to convert. If empty it will convert the first.")]string tableName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
-            List<T> listData = new List<T>();
+            List<T> listData = new();
             if(dataSet.Tables.Count==0)
             {
                 ErrorMessage = $"No sheets were found in DataSet";
                 return listData;
             }
-            int sheetNumber = this.GetTableIndex(dataSet,tableName);
-            if(sheetNumber < 0)
-                sheetNumber = 0;
-            listData.AddRange(this.ToListData<T>(dataSet.Tables[0], handlerOptions));
+            int sheetIndex = this.GetTableIndex(dataSet,tableName);
+            if(sheetIndex == -1)
+            {
+                this.ErrorMessage = $"DataSet does not contain table '{tableName}'";
+                return listData;
+            }
+            listData.AddRange(this.ToListData<T>(dataSet.Tables[sheetIndex], handlerOptions));
             return listData;
         }
+
 
         /// <summary>Convert a list of type 'T' into columns in a single worksheet inside an Excel file.</summary>
         /// <param name="listData">List of type 'T' to convert.</param>
@@ -687,7 +763,7 @@ namespace Seamlex.Utilities
 
         public void AddBaseStylesheet(SpreadsheetDocument spreadsheet, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
         {
-            WorkbookStylesPart stylesPart = spreadsheet.WorkbookPart.AddNewPart<WorkbookStylesPart>();
+            WorkbookStylesPart stylesPart = spreadsheet?.WorkbookPart?.AddNewPart<WorkbookStylesPart>();
             stylesPart.Stylesheet = this.CreateBaseStylesheet(handlerOptions);
             spreadsheet.WorkbookPart.WorkbookStylesPart.Stylesheet.Save();
         }
@@ -1072,8 +1148,10 @@ namespace Seamlex.Utilities
                                 {
                                     foreach (Cell cell in headerRow.Descendants<Cell>())
                                     {
-                                        string columnName = GetCellValue(workbookPart, cell);
-                                        if(!this.IsValidWorksheetName(columnName))
+            // 2022-09-01 1.0.2 #3 SNJW if the column is merged or blank then give it a placeholder name
+            // this is okay as it will not align with 
+                                        string columnName = (GetCellValue(workbookPart, cell) ?? "").ToString();
+                                        if(!this.CanAddColumn(dataTable,columnName))
                                         {
                                             if(columnIndex==0)
                                             {
@@ -1081,7 +1159,8 @@ namespace Seamlex.Utilities
                                             }
                                             else
                                             {
-                                                columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower().Substring(0,31);
+                                                // columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower().Substring(0,31);
+                                                columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower()[..31];                                                
                                             }
                                         }
                                         dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
@@ -1226,13 +1305,44 @@ Be named "History". This is a reserved word Excel uses internally.
             return true;
         }
 
+
+        /// <summary>Perform a case-insensitive check whether a column name exists in a datatable.</summary>
+        /// <param name="dataTable">DataTable to check.</param>
+        /// <param name="testName">Text to test whether this can added as a valid column in this DataTable.</param>
+        [Description("Check whether a name can be an Excel worksheet.")]
+        public bool CanAddColumn([Description("DataTable to check.")]DataTable dataTable, [Description("ext to test whether this can added as a valid column in this DataTable.")]string testName)
+        {
+            testName = testName.ToLower().Trim();
+            if(testName=="")
+                return false;
+            for(int i = 0; i < dataTable.Columns.Count; i++)
+            {
+                if(dataTable.Columns[i].ColumnName.ToLower().Trim() == testName)
+                    return false;
+            }
+            return true;
+        }
+
         /// <summary>Convert the first worksheet inside an Excel file into a DataTable.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         [Description("Convert the first worksheet inside an Excel file into a DataTable.")]
         public DataTable ToDataTable([Description("Full path and name of the Excel XLSX document.")]string filePath)
         {
-            return this.ToDataTable(filePath,"",this.DefaultOptions);
+            return this.ToDataTable(filePath,0,this.DefaultOptions);
         }
+        /// <summary>Convert the first worksheet inside an Excel file into a DataTable.</summary>
+        /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a single worksheet inside an Excel file into a DataTable.")]
+        public DataTable ToDataTable([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            var dataSet = this.ToDataSet(filePath,handlerOptions);
+            if(dataSet.Tables.Count == 0)
+                return new DataTable();
+            return dataSet.Tables[0];
+        }
+
+
         /// <summary>Convert a single worksheet inside an Excel file into a DataTable.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
@@ -1241,6 +1351,30 @@ Be named "History". This is a reserved word Excel uses internally.
         {
             return this.ToDataTable(filePath,sheetName,this.DefaultOptions);
         }
+
+        /// <summary>Convert a single worksheet inside an Excel file into a DataTable.</summary>
+        /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
+        /// <param name="sheetIndex">Zero-based index of the Excel worksheet.</param>
+        [Description("Convert a single worksheet inside an Excel file into a DataTable.")]
+        public DataTable ToDataTable([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Zero-based index of the Excel worksheet.")]int sheetIndex)
+        {
+            return this.ToDataTable(filePath,sheetIndex,this.DefaultOptions);
+        }
+        /// <summary>Convert a single worksheet inside an Excel file into a DataTable.</summary>
+        /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
+        /// <param name="sheetIndex">Zero-based index of the Excel worksheet.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a single worksheet inside an Excel file into a DataTable.")]
+        public DataTable ToDataTable([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Zero-based index of the Excel worksheet.")]int sheetIndex, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            var dataSet = this.ToDataSet(filePath,handlerOptions);
+            if(dataSet.Tables.Count == 0)
+                return new DataTable();
+            return dataSet.Tables[sheetIndex];
+        }
+
+
+
         /// <summary>Convert a single worksheet inside an Excel file into a DataTable.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
@@ -1253,14 +1387,16 @@ Be named "History". This is a reserved word Excel uses internally.
                 return new DataTable();
             if(sheetName == "")
                 return dataSet.Tables[0];
-            if(!dataSet.Tables.Contains(sheetName))
+            int sheetIndex = GetTableIndex(dataSet,sheetName);
+            if(sheetIndex == -1)
             {
-                if(this.ErrorMessage == "")
-                    this.ErrorMessage = $"Excel file '{filePath}' does not contain workseet '{sheetName}'";
+                this.ErrorMessage = $"Excel file '{filePath}' does not contain worksheet '{sheetName}'";
                 return new DataTable();
             }
-            return dataSet.Tables[sheetName];
+            return dataSet.Tables[sheetIndex];
         }
+
+
 
         /// <summary>Convert a list of strings into a DataTable.</summary>
         /// <param name="listData">List of strings to convert.</param>
@@ -1534,7 +1670,7 @@ Be named "History". This is a reserved word Excel uses internally.
         public List<T> ToListData<T>([Description("DataTable to convert.")]DataTable dataTable, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             bool useHeadings = handlerOptions?.UseHeadings ?? this.DefaultOptions.UseHeadings;
-            List<T> listData = new List<T>();
+            List<T> listData = new();
             // Get the properties of the POCO object
             var properties = typeof(T).GetProperties();
             var fields = typeof(T).GetFields();
@@ -2015,6 +2151,28 @@ Be named "History". This is a reserved word Excel uses internally.
 
             return null;
         }
+
+        
+
+        /// <summary>Performs a case-insensitive check of table names in a DataSet.  Returns -1 if none found.</summary>
+        /// <param name="dataSet">Source data from Excel.</param>
+        /// <param name="checkName">Worksheet name to check.</param>
+        [Description("Performs a case-insensitive check of table names in a DataSet.  Returns -1 if none found.")]
+        private int GetTableIndex([Description("DataSet to search.")]DataSet dataSet, [Description("Name of the DataTable.")]string checkName)
+        {
+            if(checkName=="")
+                return -1;
+            checkName = checkName.Trim().ToLower();
+            for(int i = 0; i < dataSet.Tables.Count; i++)
+            {
+                // 2023-07-15 SNJW MS Excel worksheet names are case-insensitve
+                // if(dataSet.Tables[i]?.TableName == tableName)
+                if(dataSet.Tables[i]?.TableName.Trim().ToLower() == checkName)
+                    return i;
+            }
+            return -1;
+        }
+
 
         /// <summary>Parses an Excel date/time value and returns its CLR DateTime value.</summary>
         /// <param name="sourceValue">Source date/time value from Excel.</param>

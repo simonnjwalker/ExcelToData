@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 
+#pragma warning disable CS8600, CS8604, CS8601, CS8603, CS8602, CS8618, CS8625
+
 namespace Seamlex.Utilities
 {
     ///<summary>Values for non-null blanks in Excel data.</summary>

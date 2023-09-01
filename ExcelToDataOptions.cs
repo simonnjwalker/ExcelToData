@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
 
+#pragma warning disable CS8600, CS8604, CS8601, CS8603, CS8602, CS8618, CS8625
+
 namespace Seamlex.Utilities
 {
     ///<summary>Options for controlling Seamlex.Utilities.ExcelToData.</summary>
