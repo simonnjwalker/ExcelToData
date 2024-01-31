@@ -193,10 +193,10 @@ namespace Seamlex.Utilities
         }
         /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
+        /// <param name="sheetName">Name of the Excel worksheet. If blank will infer it otherwise use the first.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
         [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
-        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will infer it otherwise use the first.")]string sheetName, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
             byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
@@ -212,8 +212,18 @@ namespace Seamlex.Utilities
                 return listData;
             }
             int sheetIndex = 0;
-            if(sheetName!="")
+            // 2024-01-31 SNJW if the name of the type is not passed in, infer it
+            // if(sheetName!="")
+            //     sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            if(sheetName=="")
+            {
+                sheetIndex = this.GetTableIndex(dataSet,typeof(T).Name);
+            }
+            else
+            {
                 sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            }
+
             if(sheetIndex == -1)
             {
                 this.ErrorMessage = $"Excel file '{filePath}' does not contain worksheet '{sheetName}'";
@@ -318,8 +328,17 @@ namespace Seamlex.Utilities
                 return listData;
             }
             int sheetIndex = 0; 
-            if(sheetName!="")
+            // 2024-01-31 SNJW if the name of the type is not passed in, infer it
+            // if(sheetName!="")
+            //     sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            if(sheetName=="")
+            {
+                sheetIndex = this.GetTableIndex(dataSet,typeof(T).Name);
+            }
+            else
+            {
                 sheetIndex = this.GetTableIndex(dataSet,sheetName);
+            }
             if(sheetIndex == -1)
             {
                 this.ErrorMessage = $"Excel binary data does not contain worksheet '{sheetName}'";
@@ -1141,50 +1160,65 @@ namespace Seamlex.Utilities
                             int columnIndex = 0;
                             int columnTotal = 0;
                             int skipFirst = 1;
-                            if(useHeadings)
-                            {
-                                Row headerRow = sheetData.Descendants<Row>().First();
-                                if(headerRow.HasChildren==true)
-                                {
-                                    foreach (Cell cell in headerRow.Descendants<Cell>())
-                                    {
-            // 2022-09-01 1.0.2 #3 SNJW if the column is merged or blank then give it a placeholder name
-            // this is okay as it will not align with 
-                                        string columnName = (GetCellValue(workbookPart, cell) ?? "").ToString();
-                                        if(!this.CanAddColumn(dataTable,columnName))
-                                        {
-                                            if(columnIndex==0)
-                                            {
-                                                columnName = defaultColumnName;
-                                            }
-                                            else
-                                            {
-                                                // columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower().Substring(0,31);
-                                                columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower()[..31];                                                
-                                            }
-                                        }
-                                        dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
-                                        columnIndex++;
-                                        columnTotal++;
-                                    }
-                                }
-                                else
-                                {
-                                    dataTable.Columns.Add(new DataColumn(defaultColumnName, typeof(string)));
-                                    columnIndex++;
-                                }
-                            }
-                            else
-                            {
-                                skipFirst = 0;
-                                Row firstRow = sheetData.Descendants<Row>().First();
-                                for(int i = 0; i<firstRow.Descendants().Count(); i++)
-                                {
-                                    string columnName = defaultColumnName.TrimEnd('1') + i.ToString().PadLeft(3,'0');
-                                    dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
-                                    columnIndex++;
-                                }
-                            }
+
+                            // 2024-01-31 SNJW there is an issue with blank values
+                            // so need to get the index of the last value in the first row and fill in the gaps
+                            List<string> columnNames = GetColumnNames(workbookPart,sheetData.Descendants<Row>().First(),useHeadings);
+                            foreach(var columnName in columnNames)
+                                dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
+                            columnTotal = dataTable.Columns.Count;
+
+
+
+
+
+            //                 if(useHeadings)
+            //                 {
+            //                     Row headerRow = sheetData.Descendants<Row>().First();
+            //                     if(headerRow.HasChildren==true)
+            //                     {
+            //                         foreach (Cell cell in headerRow.Descendants<Cell>())
+            //                         {
+            // // 2022-09-01 1.0.2 #3 SNJW if the column is merged or blank then give it a placeholder name
+            // // this is okay as it will not align with 
+            //                             string columnName = (GetCellValue(workbookPart, cell) ?? "").ToString();
+            //                             if(!this.CanAddColumn(dataTable,columnName))
+            //                             {
+            //                                 if(columnIndex==0)
+            //                                 {
+            //                                     columnName = defaultColumnName;
+            //                                 }
+            //                                 else
+            //                                 {
+            //                                     // columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower().Substring(0,31);
+            //                                     columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower()[..31];                                                
+            //                                 }
+            //                             }
+            //                             dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
+            //                             columnIndex++;
+            //                             columnTotal++;
+            //                         }
+            //                     }
+            //                     else
+            //                     {
+            //                         dataTable.Columns.Add(new DataColumn(defaultColumnName, typeof(string)));
+            //                         columnIndex++;
+            //                     }
+            //                 }
+            //                 else
+            //                 {
+            //                     skipFirst = 0;
+            //                     Row firstRow = sheetData.Descendants<Row>().First();
+            //                     for(int i = 0; i<firstRow.Descendants().Count(); i++)
+            //                     {
+            //                         string columnName = defaultColumnName.TrimEnd('1') + i.ToString().PadLeft(3,'0');
+            //                         dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
+            //                         columnIndex++;
+            //                     }
+            //                 }
+
+
+                            
 
                             // Add the data rows
                             int rowcount = 0;
@@ -1199,29 +1233,93 @@ namespace Seamlex.Utilities
                                 DataRow dataRow = dataTable.NewRow();
                                 columnIndex = 0;
 
-//                                foreach (Cell cell in row.Elements<Cell>())
-                                for(int i = 0; i < columnTotal; i++) // 
-                                {
-                                    Cell cell = null;
-                                    try
-                                    {
-                                        cell = row.Descendants<Cell>().ElementAt(i);
-                                    }
-                                    catch
-                                    {
+                                // 2024-01-31 SNJW there is an issue with blank cells where OpenXML simply will not detect them
+                                int descendantCount = row.Descendants<Cell>().Count();
+                                if(descendantCount==0 || descendantCount != columnTotal)
+                                    for (int i = 0; i < dataRow.ItemArray.Length; i++)
+                                        dataRow[i]="";
 
-                                    }
-                                    if(cell == null)
+                                if(descendantCount == columnTotal)
+                                {
+                                    // this is the original code
+                                    for(int i = 0; i < columnTotal; i++) // 
                                     {
-                                        dataRow[columnIndex] = "";
-                                    }
-                                    else
-                                    {
-                                        string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
-                                        dataRow[columnIndex] = cellValue;
-                                    }
-                                    columnIndex++;
+                                        Cell cell = null;
+                                        try
+                                        {
+                                            cell = row.Descendants<Cell>().ElementAt(i);
+                                        }
+                                        catch
+                                        {
+
+                                        }
+                                        if(cell == null)
+                                        {
+                                            dataRow[i] = "";
+                                        }
+                                        else
+                                        {
+                                            string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
+                                            dataRow[i] = cellValue;
+                                        }
+                                    }                                    
                                 }
+                                else if(descendantCount>0)
+                                {
+                                    // go through each of the cells that exist, find the index of these and insert it in the correct spot
+                                    for(int i = 0; i < descendantCount; i++) // 
+                                    {
+                                        Cell cell = null;
+                                        try
+                                        {
+                                            cell = row.Descendants<Cell>().ElementAt(i);
+                                        }
+                                        catch
+                                        {
+
+                                        }
+                                        if(cell != null)
+                                        {
+                                            string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
+                                            int cellIndex = GetCellIndex(cell.CellReference);
+                                            dataRow[cellIndex] = cellValue;
+                                        }
+                                    }
+                                }
+
+
+
+
+
+
+
+
+// //                                foreach (Cell cell in row.Elements<Cell>())
+//                                 for(int i = 0; i < columnTotal; i++) // 
+//                                 {
+//                                     Cell cell = null;
+//                                     try
+//                                     {
+//                                         cell = row.Descendants<Cell>().ElementAt(i);
+//                                     }
+//                                     catch
+//                                     {
+
+//                                     }
+//                                     if(cell == null)
+//                                     {
+//                                         dataRow[columnIndex] = "";
+//                                     }
+//                                     else
+//                                     {
+//                                         string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
+//                                         dataRow[columnIndex] = cellValue;
+//                                     }
+//                                     columnIndex++;
+//                                 }
+
+
+
                                 dataTable.Rows.Add(dataRow);
                             }
 
@@ -1240,6 +1338,100 @@ namespace Seamlex.Utilities
             return output;
         }
 
+        private List<string> GetColumnNames(WorkbookPart workbookPart, Row row, bool useHeadings)
+        {
+            // we need to find the index value of each item in the top row of the XLSX
+            int descendantCount = row.Descendants<Cell>().Count();
+            List<string> output = new();
+
+            if(descendantCount==0)
+                return output;
+            
+            int lastCellIndex = GetCellIndex(row.Descendants<Cell>().Last().CellReference);
+
+            // if these align 1-to-1, we can cycle through them or use default names
+            if(descendantCount == ( lastCellIndex + 1))
+            {
+                if(useHeadings)
+                {
+                    // use the headings if they are unique
+                    for(int i = 0; i < descendantCount; i++) // 
+                    {
+                        Cell cell = null;
+                        try
+                        {
+                            cell = row.Descendants<Cell>().ElementAt(i);
+                        }
+                        catch
+                        {
+
+                        }
+                        string headingName = $"Column{i+1}";
+                        if(cell != null)
+                        {
+                            string cellValue = (GetCellValue((WorkbookPart)workbookPart, cell) ?? "").ToString();
+                            if(cellValue=="")
+                            {
+                                cellValue = headingName;
+                            }
+                            else if(cellValue.Length==1)
+                            {
+                                if(!char.IsLetterOrDigit(cellValue[0]))
+                                    cellValue = headingName;
+                            }
+                            else
+                            {
+                                string fieldCheck = "";
+                                for(int j = 0; j < cellValue.Length; j++)
+                                {
+                                    if(j == 0)
+                                    {
+                                        if(char.IsLetter(cellValue[0]))
+                                        {
+                                            fieldCheck = cellValue[0].ToString();
+                                        }
+                                        else
+                                        {
+                                            fieldCheck = "_";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if(!char.IsLetterOrDigit(cellValue[j]))
+                                        {
+                                            fieldCheck += "_";
+                                        }
+                                        else
+                                        {
+                                            fieldCheck += cellValue[j];
+                                        }
+                                    }
+                                }
+                                if(fieldCheck.Length>64)
+                                    fieldCheck = fieldCheck.Substring(0,64);
+                                cellValue = fieldCheck;
+                            }
+
+                            if(output.Exists(x => x.Equals(cellValue)))
+                                cellValue = headingName;
+                            headingName = cellValue;
+                        }
+
+                        if(output.Exists(x => x.Equals(headingName)))
+                            headingName = System.Guid.NewGuid().ToString().Replace("-","").ToLower();
+                        output.Add(headingName);
+                    }
+                }
+                else
+                {
+                    // use the default column names
+                    for (int i = 0; i < descendantCount; i++)
+                        output.Add($"Column{i+1}");
+                }
+            }
+            return output;
+        }
+
         private string GetCellValue(WorkbookPart workbookPart, Cell cell)
         {
             string cellValue = cell?.CellValue?.InnerText;
@@ -1253,22 +1445,85 @@ namespace Seamlex.Utilities
 
         private int GetCellIndex(string cellReference)
         {
-            int index = 0;
-            // string cellReference = cell.CellReference.ToString().ToUpper();
-            foreach (char ch in cellReference)
+            // Remove any numeric characters to isolate the column part
+            string columnPart = string.Empty;
+            foreach (char c in cellReference)
             {
-                if (Char.IsLetter(ch))
+                if (char.IsLetter(c))
                 {
-                    int value = (int)ch - (int)'A';
-                    index = (index == 0) ? value : ((index + 1) * 26) + value;
+                    columnPart += c;
+                }
+            }
+
+            // Convert column letters to zero-based column index
+            int columnIndex = 0;
+            for (int i = 0; i < columnPart.Length; i++)
+            {
+                columnIndex *= 26;
+                columnIndex += (columnPart[i] - 'A' + 1);
+            }
+
+            return columnIndex - 1; // Subtract 1 to make it zero-based
+        }
+
+
+    private string SanitizeFieldName(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return System.Guid.NewGuid().ToString().Replace("-","").ToLower();
+
+        if(input.Length==1)
+        {
+
+        }
+            return System.Guid.NewGuid().ToString().Replace("-","").ToLower();
+
+
+        var sb = new System.Text.StringBuilder();
+        bool isFirstChar = true;
+
+        foreach (char c in input)
+        {
+            // First character must be a letter or an underscore
+            if (isFirstChar)
+            {
+                if (char.IsLetter(c))
+                {
+                    sb.Append(c);
                 }
                 else
                 {
-                    return index;
+                    sb.Append('_');
+                }
+                isFirstChar = false;
+            }
+            else
+            {
+                if (char.IsLetterOrDigit(c) || c == '_')
+                {
+                    sb.Append(c);
+                }
+                // Optionally, handle other characters like spaces, hyphens, etc., here
+                // For example, convert them to underscores
+                else
+                {
+                    sb.Append('_');
                 }
             }
-            return index;
         }
+
+        string result = sb.ToString();
+
+        // // Prepend with an underscore if the result is a reserved keyword
+        // if (ReservedKeywords.Contains(result))
+        // {
+        //     result = "_" + result;
+        // }
+
+        return result;
+    }
+
+
 /*
 Important:  Worksheet names cannot:
 Be blank.
@@ -1310,7 +1565,7 @@ Be named "History". This is a reserved word Excel uses internally.
         /// <param name="dataTable">DataTable to check.</param>
         /// <param name="testName">Text to test whether this can added as a valid column in this DataTable.</param>
         [Description("Check whether a name can be an Excel worksheet.")]
-        public bool CanAddColumn([Description("DataTable to check.")]DataTable dataTable, [Description("ext to test whether this can added as a valid column in this DataTable.")]string testName)
+        public bool CanAddColumn([Description("DataTable to check.")]DataTable dataTable, [Description("Text to test whether this can added as a valid column in this DataTable.")]string testName)
         {
             testName = testName.ToLower().Trim();
             if(testName=="")
@@ -2218,5 +2473,9 @@ Be named "History". This is a reserved word Excel uses internally.
             }
             return System.DateTime.Now;
         }
+
+
+
+
     }
 }

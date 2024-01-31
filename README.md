@@ -32,6 +32,18 @@ https://github.com/simonnjwalker/ExcelToData/issues/4
 https://github.com/simonnjwalker/ExcelToData/issues/5
 
 
+1.0.3 Fixed issues where OpenXML skips blank cells and infering tablename from type
+
+Fixed to correctly skip blank cells in headers and in data
+https://github.com/simonnjwalker/ExcelToData/issues/6
+
+7 - fixed to should infer the worksheet name <T> when List<T> is the required output
+https://github.com/simonnjwalker/ExcelToData/issues/7
+
+
+
+
+
 
 
 # Sample code
