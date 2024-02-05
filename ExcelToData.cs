@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Globalization;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Collections.Immutable;
 
 #pragma warning disable CS8600, CS8604, CS8601, CS8603, CS8602, CS8618, CS8625, CS8632
 
@@ -77,7 +78,10 @@ namespace Seamlex.Utilities
                                         "yyyy-MM-dd HH:mm:ss"},
                 DateTimeCheckCultures = new List<System.Globalization.CultureInfo>{ CultureInfo.GetCultureInfo("en-AU")},
                 ColumnsToDateTime = new List<string>(),
-                ColumnsToNumber = new List<string>()
+                ColumnsToNumber = new List<string>(),
+                CsvWrapAll = false,
+                CsvFormat = "UTF-8 (Comma delimited)",
+                CsvNewLine = "\r\n"
             };
         }
 
@@ -176,18 +180,18 @@ namespace Seamlex.Utilities
             return listData;
         }
 
-        /// <summary>Convert the first worksheet in an Excel file into a list of type 'T'.</summary>
+        /// <summary>Convert the a worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        [Description("Convert the first worksheet in an Excel file into a list of type 'T'.")]
+        [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
         public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath) where T : new()
         {
             return this.ToListData<T>(filePath,"",this.DefaultOptions);
         }
         /// <summary>Convert a worksheet in an Excel file into a list of type 'T'.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        /// <param name="sheetName">Name of the Excel worksheet. If blank will use the first.</param>
+        /// <param name="sheetName">Name of the Excel worksheet. If blank will infer it otherwise use the first.</param>
         [Description("Convert a worksheet in an Excel file into a list of type 'T'.")]
-        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will use the first.")]string sheetName) where T : new()
+        public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Name of the Excel worksheet. If blank will infer it otherwise use the first.")]string sheetName) where T : new()
         {
             return this.ToListData<T>(filePath,sheetName,this.DefaultOptions);
         }
@@ -251,11 +255,32 @@ namespace Seamlex.Utilities
         public List<T> ToListData<T>([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Zero-based index of the Excel worksheet.")]int sheetIndex, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
         {
             ErrorMessage = "";
-            byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
+            DataSet dataSet;
             List<T> listData = new();
-            if(ErrorMessage!="")
-                return listData;
-            DataSet dataSet = this.ToDataSet(byteArray, handlerOptions);
+            if(Path.GetExtension(filePath).ToLower()==".csv" || Path.GetExtension(filePath).ToLower()==".txt")
+            {
+                string csvText = "";
+                try
+                {
+                    csvText = System.IO.File.ReadAllText(filePath);
+                }
+                catch
+                {
+                    ErrorMessage = $"Could not open CSV file {filePath}";
+                }
+                if(ErrorMessage!="")
+                    return listData;
+                string tableName = Path.GetFileNameWithoutExtension(filePath);
+                dataSet = this.CsvTextToDataSet(csvText, handlerOptions, tableName);
+            }
+            else
+            {
+                byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
+                if(ErrorMessage!="")
+                    return listData;
+                dataSet = this.ToDataSet(byteArray, handlerOptions);
+            }
+
             if(ErrorMessage!="")
                 return listData;
             if(dataSet.Tables.Count==0)
@@ -1085,25 +1110,40 @@ namespace Seamlex.Utilities
             return maxColWidth;
         }        
 
-        /// <summary>Convert an Excel file into a DataSet.</summary>
+        /// <summary>Convert an Excel (XLSX/CSV) file into a DataSet.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
-        [Description("Convert an Excel file into a DataSet.")]
+        [Description("Convert an Excel (XLSX/CSV) file into a DataSet.")]
         public DataSet ToDataSet([Description("Full path and name of the Excel XLSX document.")]string filePath)
         {
             return this.ToDataSet(filePath,this.DefaultOptions);
         }
-        /// <summary>Convert an Excel file into a DataSet.</summary>
+        /// <summary>Convert an Excel (XLSX/CSV) file into a DataSet.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
-        [Description("Convert an Excel file into a DataSet.")]
+        [Description("Convert an Excel (XLSX/CSV) file into a DataSet.")]
         public DataSet ToDataSet([Description("Full path and name of the Excel XLSX document.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
         {
-            byte[] byteArray = this.ToExcelBinary(filePath,handlerOptions);
-            if(this.ErrorMessage!="")
-                return new DataSet();
-            DataSet dataSet = this.ToDataSet(byteArray,handlerOptions);
-            if(dataSet.Tables.Count==0 && this.ErrorMessage == "")
-                this.ErrorMessage = $"No data was found in '{filePath}'";
+            ErrorMessage = "";
+            DataSet dataSet;
+            if(Path.GetExtension(filePath).ToLower()==".csv" || Path.GetExtension(filePath).ToLower()==".txt")
+            {
+                string csvText = "";
+                try
+                {
+                    csvText = System.IO.File.ReadAllText(filePath);
+                }
+                catch
+                {
+                    ErrorMessage = $"Could not open CSV file {filePath}";
+                }
+                string tableName = Path.GetFileNameWithoutExtension(filePath);
+                dataSet = this.CsvTextToDataSet(csvText, handlerOptions, tableName);
+            }
+            else
+            {
+                byte[] byteArray = this.ToExcelBinary(filePath, handlerOptions);
+                dataSet = this.ToDataSet(byteArray, handlerOptions);
+            }
             return dataSet;
         }
 
@@ -1145,7 +1185,7 @@ namespace Seamlex.Utilities
                         Sheets sheets = workbookPart.Workbook.Sheets;
 
                         // Iterate through the sheets
-                        foreach (Sheet sheet in sheets)
+                        foreach (Sheet sheet in sheets.Cast<Sheet>())
                         {
                             // Get the worksheet part
                             WorksheetPart worksheetPart = (WorksheetPart)(workbookPart.GetPartById(sheet.Id));
@@ -1467,21 +1507,18 @@ namespace Seamlex.Utilities
         }
 
 
-    private string SanitizeFieldName(string input)
+    private string SanitiseFieldName(string input)
     {
         if (string.IsNullOrEmpty(input))
             return System.Guid.NewGuid().ToString().Replace("-","").ToLower();
 
-        if(input.Length==1)
+        if(input.Length==1 && char.IsLetter(input[0]))
         {
-
+            return input;
         }
-            return System.Guid.NewGuid().ToString().Replace("-","").ToLower();
-
 
         var sb = new System.Text.StringBuilder();
         bool isFirstChar = true;
-
         foreach (char c in input)
         {
             // First character must be a letter or an underscore
@@ -1512,14 +1549,8 @@ namespace Seamlex.Utilities
             }
         }
 
+//        return System.Guid.NewGuid().ToString().Replace("-","").ToLower();
         string result = sb.ToString();
-
-        // // Prepend with an underscore if the result is a reserved keyword
-        // if (ReservedKeywords.Contains(result))
-        // {
-        //     result = "_" + result;
-        // }
-
         return result;
     }
 
@@ -2474,6 +2505,520 @@ Be named "History". This is a reserved word Excel uses internally.
             return System.DateTime.Now;
         }
 
+
+#region csv-handling
+
+
+        /// <summary>Convert a list of type 'T' into columns in a CSV file.</summary>
+        /// <param name="listData">List of type 'T' to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Convert a list of type 'T' into columns in a CSV file.")]
+        public bool ToCsvFile<T>([Description("List of type 'T' convert.")]List<T> listData, [Description("Full path and name of the CSV file.")]string filePath) where T : new() 
+        {
+            return this.ToCsvFile<T>(listData,filePath,this.DefaultOptions);
+        }
+        /// <summary>Convert a list of type 'T' into columns in a CSV file.</summary>
+        /// <param name="listData">List of type 'T' to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a list of type 'T' into columns in a CSV file.")]
+        public bool ToCsvFile<T>([Description("List of type 'T' convert.")]List<T> listData, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new() 
+        {
+            ErrorMessage = "";
+            var dataTable = this.ToDataTable<T>(listData, handlerOptions);
+            string csvText = this.ToCsvText(dataTable, handlerOptions);
+            if(ErrorMessage!="")
+                return false;
+            return this.ToCsvFile(csvText, filePath, handlerOptions);
+        }
+
+        /// <summary>Convert a list of strings into one column in a CSV file.</summary>
+        /// <param name="listData">List of strings to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Convert a list of strings into one column in a CSV file.")]
+        public bool ToCsvFile([Description("List of strings to convert.")]List<string> listData, [Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvFile(listData, filePath, this.DefaultOptions);
+        }
+        /// <summary>Convert a list of strings into one column in a CSV file.</summary>
+        /// <param name="listData">List of strings to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a list of strings into one column in a CSV file.")]
+        public bool ToCsvFile([Description("List of strings to convert.")]List<string> listData, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            ErrorMessage = "";
+            DataTable dataTable = this.ToDataTable(listData, handlerOptions);
+            if(ErrorMessage!="")
+                return false;
+            string csvText = this.ToCsvText(dataTable, handlerOptions);
+            if(ErrorMessage!="")
+                return false;
+            return this.ToCsvFile(csvText, filePath, handlerOptions);
+        }
+
+        /// <summary>Convert a list of integers into one column in a CSV file.</summary>
+        /// <param name="listData">List of integers to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Convert a list of integers into one column in a CSV file.")]
+        public bool ToCsvFile([Description("List of integers to convert.")]List<int> listData, [Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvFile(listData,"",this.DefaultOptions);
+        }
+        /// <summary>Convert a list of integers into one column in a CSV file.</summary>
+        /// <param name="listData">List of integers to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a list of integers into one column in a CSV file.")]
+        public bool ToCsvFile([Description("List of integers to convert.")]List<int> listData, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            ErrorMessage = "";
+            DataTable dataTable = this.ToDataTable(listData, handlerOptions);
+            if(ErrorMessage!="")
+                return false;
+            string csvText = this.ToCsvText(dataTable, handlerOptions);
+            if(ErrorMessage!="")
+                return false;
+            return this.ToCsvFile(csvText, filePath, handlerOptions);
+        }
+
+        /// <summary>Convert a DataSet into a CSV file.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Convert a DataSet into a CSV file.")]
+        public bool ToCsvFile([Description("DataSet containing DataTables to convert.")]DataSet dataSet, [Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvFile(dataSet,filePath,this.DefaultOptions);
+        }
+        /// <summary>Convert a DataSet into a CSV file.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a DataSet into a CSV file.")]
+        public bool ToCsvFile([Description("DataSet containing DataTables to convert.")]DataSet dataSet, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            ErrorMessage = "";
+            string csvText = this.ToCsvText(dataSet,handlerOptions)[0];
+            if(ErrorMessage!="")
+                return false;
+            return this.ToCsvFile(csvText, filePath,handlerOptions);
+        }
+
+
+        /// <summary>Convert a DataSet into multiple CSV files.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        /// <param name="directoryPath">Full path to the output directory.</param>
+        [Description("Convert a DataSet into a CSV file.")]
+        public bool ToCsvFiles([Description("DataSet containing DataTables to convert.")]DataSet dataSet, [Description("Full path to output directory.")]string directoryPath)
+        {
+            return this.ToCsvFile(dataSet,directoryPath,this.DefaultOptions);
+        }
+        /// <summary>Convert a DataSet into multiple CSV files.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        /// <param name="directoryPath">Full path to the output directory.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a DataSet into multiple CSV files.")]
+        public bool ToCsvFiles([Description("DataSet containing DataTables to convert.")]DataSet dataSet, [Description("Full path to output directory.")]string directoryPath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            ErrorMessage = "";
+            var csvFiles = this.ToCsvText(dataSet,handlerOptions);
+            if(csvFiles.Count < dataSet.Tables.Count)
+                if(ErrorMessage=="")
+                    ErrorMessage = $"Could only create {csvFiles.Count} files from {dataSet.Tables.Count} files"; 
+            if(ErrorMessage!="")
+                return false;
+            bool saveResult = true;
+            for (int i = 0; i < dataSet.Tables.Count; i++)
+            {
+                string filePath = Path.Combine(directoryPath,dataSet.Tables[i].TableName+".csv");
+                if(!this.ToCsvFile(csvFiles[i],filePath,handlerOptions))
+                    saveResult = false;
+            }
+            if(ErrorMessage!="")
+                return false;
+            return saveResult;
+        }
+
+        /// <summary>Convert a DataTable into a CSV file.</summary>
+        /// <param name="dataTable">DataTable to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Convert a DataTable into a CSV file.")]
+        public bool ToCsvFile([Description("DataTable to convert.")]DataTable dataTable, [Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvFile(dataTable,filePath,this.DefaultOptions);
+        }
+        /// <summary>Convert a DataTable into a CSV file.</summary>
+        /// <param name="dataTable">DataTable to convert.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a DataSet into a CSV file.")]
+        public bool ToCsvFile([Description("DataTable to convert.")]DataTable dataTable, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            DataSet dataSet = new DataSet();
+            dataSet.Tables.Add(dataTable.Copy());
+            return this.ToCsvFile(dataSet,filePath,handlerOptions);
+        }
+
+        /// <summary>Save an in-memory CSV text file to a local file.</summary>
+        /// <param name="csvText">CSV text data to save as a file.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Save an in-memory CSV text file to a local file.")]
+        public bool ToCsvFile([Description("CSV text data to save as a file.")]string csvText, [Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvFile(csvText,filePath,this.DefaultOptions);
+        }
+        /// <summary>Save an in-memory CSV text file to a local file.</summary>
+        /// <param name="csvText">CSV text data to save as a file.</param>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Save in-memory CSV text to a local file.")]
+        public bool ToCsvFile([Description("CSV text data to save as a file.")]string csvText, [Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            ErrorMessage = "";
+            if(ErrorMessage!="")
+                return false;
+            try
+            {
+                File.WriteAllText(filePath, csvText);
+            }
+            catch (IOException ex)
+            {
+                ErrorMessage = $"Error creating CSV file: '{ex.InnerException}'";
+            }
+            return ErrorMessage=="";
+        }
+
+        /// <summary>Load a local CSV file to in-memory string data.</summary>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        [Description("Load a local CSV file to in-memory string data.")]
+        public string ToCsvText([Description("Full path and name of the CSV file.")]string filePath)
+        {
+            return this.ToCsvText(filePath,this.DefaultOptions);
+        }
+        /// <summary>Load a local CSV file to in-memory string data.</summary>
+        /// <param name="filePath">Full path and name of the CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Load a local CSV file to in-memory string data.")]
+        public string ToCsvText([Description("Full path and name of the CSV file.")]string filePath, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            string result ="";
+            ErrorMessage = "";
+            try
+            {
+                result = File.ReadAllText(filePath);
+            }
+            catch (IOException ex)
+            {
+                ErrorMessage = $"Error loading CSV file: '{ex.InnerException}'";
+            }
+            return result;
+        }
+
+        /// <summary>Convert a list of type 'T' into an in-memory string CSV file.</summary>
+        /// <param name="listData">List of type 'T' to copy into an in-memory CSV file.</param>
+        [Description("Convert a list of type 'T' into an in-memory string CSV file.")]
+        public string ToCsvText<T>([Description("List of type 'T' to copy into an in-memory CSV file.")]List<T> listData) where T : new()
+        {
+            return this.ToCsvText<T>(listData,this.DefaultOptions);
+        }
+        /// <summary>Convert a list of type 'T' into an in-memory string CSV file.</summary>
+        /// <param name="listData">List of type 'T' to copy into an in-memory CSV file.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert a list of type 'T' into an in-memory string CSV file.")]
+        public string ToCsvText<T>([Description("List of type 'T' to copy into an in-memory CSV file.")]List<T> listData, [Description("Optional settings.")]ExcelToDataOptions handlerOptions) where T : new()
+        {
+            var dataTable = this.ToDataTable<T>(listData,handlerOptions);
+            return this.ToCsvText(dataTable,handlerOptions);
+        }
+
+        /// <summary>Convert a DataTable into an in-memory string CSV file.</summary>
+        /// <param name="dataTable">DataTable to convert.</param>
+        [Description("Convert a DataTable into an in-memory string CSV file.")]
+        public string ToCsvText([Description("DataTable to convert.")]DataTable dataTable)
+        {
+            return this.ToCsvText(dataTable,this.DefaultOptions);
+        }
+        /// <summary>Convert a DataTable into an in-memory string CSV file.</summary>
+        /// <param name="dataTable">DataTable to convert.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>        
+        [Description("Convert a DataTable into an in-memory string CSV file.")]
+        public string ToCsvText([Description("DataTable to convert.")]DataTable dataTable, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            DataSet dataSet = new DataSet();
+            dataSet.Tables.Add(dataTable);
+            return this.ToCsvText(dataSet,handlerOptions)[0];
+        }
+
+        /// <summary>Convert a DataSet into an in-memory string CSV file.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        [Description("Convert a DataSet into an in-memory string CSV file.")]
+        public List<string> ToCsvText([Description("DataSet containing DataTables to convert.")]DataSet dataSet)
+        {
+            return this.ToCsvText(dataSet,this.DefaultOptions);
+        }
+        /// <summary>Convert a DataSet into an in-memory string CSV file.</summary>
+        /// <param name="dataSet">DataSet containing DataTables to convert.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>        
+        [Description("Convert a DataSet into an in-memory string CSV file.")]
+        public List<string> ToCsvText([Description("DataSet containing DataTables to convert.")]DataSet dataSet, ExcelToDataOptions handlerOptions)
+        {
+            bool useHeadings = handlerOptions?.UseHeadings ?? this.DefaultOptions.UseHeadings;
+            int maxRows = handlerOptions?.MaxRows ?? this.DefaultOptions.MaxRows;
+            List<string> columnsToDateTime = handlerOptions?.ColumnsToDateTime ?? new List<string>();
+            List<string> columnsToNumber = handlerOptions?.ColumnsToNumber ?? new List<string>();
+
+            string outputDateFormat = handlerOptions?.OutputDateFormat ?? "yyyy-MM-dd";
+            string outputDateTimeFormat = handlerOptions?.OutputDateTimeFormat ?? "yyyy-MM-dd hh:mm:ss";
+            bool outputDateOnly = handlerOptions?.OutputDateOnly ?? false;
+
+            // 1.0.4 2024-02-04 SNJW add CSV-specific options
+            bool csvWrapAll = handlerOptions?.CsvWrapAll ?? false;
+            string csvFormat = handlerOptions?.CsvFormat ?? "UTF-8 (Comma delimited)";
+            string csvNewLine = handlerOptions?.CsvNewLine ?? "\r\n";
+            // CSV UTF-8 (Comma delimited)
+            // CSV (Comma delimited)
+            // CSV (Macintosh)
+            // CSV (MS-DOS)
+            // UTF-16 Unicode Text (.txt)
+            List<string> output = new();
+
+            bool addDateCellStyle = false;
+            bool addNumberCellStyle = false;
+            if(columnsToDateTime.Count > 0 || columnsToNumber.Count > 0)
+            {
+                foreach(System.Data.DataTable table in dataSet.Tables)
+                {
+                    foreach(System.Data.DataColumn column in table.Columns)
+                    {
+                        if(columnsToDateTime.Contains(table.TableName+'.'+column.ColumnName) || columnsToDateTime.Contains(column.ColumnName))
+                        {
+                            addDateCellStyle = true;
+                        }
+                        if(columnsToNumber.Contains(table.TableName+'.'+column.ColumnName) || columnsToNumber.Contains(column.ColumnName))
+                        {
+                            addNumberCellStyle = true;
+                        }
+
+                        if(addDateCellStyle && addNumberCellStyle)
+                            break;
+                    }
+                }
+            }
+
+            ErrorMessage = "";
+
+            int tableid = 0;
+
+            foreach(System.Data.DataTable dataTable in dataSet.Tables)
+            {
+                // Append a new worksheet and associate it with the workbook
+                System.Text.StringBuilder sb = new();
+                tableid++;
+                string tableName = (dataTable.TableName ?? "");
+                if(!this.IsValidWorksheetName(tableName))
+                {
+                    tableName = "Sheet"+tableid.ToString();
+                    if(dataSet.Tables.Cast<DataTable>().Any(table => table.TableName == tableName))
+                        tableName = System.Guid.NewGuid().ToString().Replace("-","").Substring(0,31);
+                }
+
+                // Add the header row
+                if(useHeadings)
+                {
+                    for (int i = 0; i < dataTable.Columns.Count; i++)
+                    {
+                        string columnName = dataTable.Columns[i].ColumnName;
+                        if(csvWrapAll || columnName.Contains(','))
+                            sb.Append('"');
+                        sb.Append(columnName);
+                        if(csvWrapAll || columnName.Contains(','))
+                            sb.Append('"');
+                        if(i==dataTable.Columns.Count-1)
+                        {
+                            sb.Append(csvNewLine);
+                        }
+                        else
+                        {
+                            sb.Append(',');
+                        }
+                    }
+                }
+
+                // Add the data rows
+                int rowcount = 0;
+                for (int i = 0; i < dataTable.Rows.Count; i++)
+                {
+                    for (int j = 0; j < dataTable.Columns.Count; j++)
+                    {
+                        string cellData = (dataTable.Rows[i].ItemArray[j] ?? "").ToString();
+                        if(csvWrapAll || cellData.Contains(','))
+                            sb.Append('"');
+                        if(cellData.Contains('"') && ( csvWrapAll || cellData.Contains(',') ))
+                        {
+                            sb.Append(cellData.Replace("\"","\\\""));
+                        }
+                        else if(cellData.Contains('\r') || cellData.Contains('\n'))
+                        {
+                            sb.Append(cellData.Replace("\n","\\n").Replace("\r","\\r"));
+                        }
+                        else
+                        {
+                            sb.Append(cellData);
+                        }
+
+                        if(csvWrapAll || cellData.Contains(','))
+                            sb.Append('"');
+                        if(j==dataTable.Columns.Count-1)
+                        {
+                            sb.Append(csvNewLine);
+                        }
+                        else
+                        {
+                            sb.Append(',');
+                        }
+
+                    }
+                    if(rowcount==maxRows)
+                        break;
+                    rowcount++;
+                }
+                output.Add(sb.ToString());
+            }
+
+            return output;
+        }
+
+
+        /// <summary>Convert in-memory CSV text into a DataSet.</summary>
+        /// <param name="csvText">In-memory CSV text to convert.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Convert an in-memory binary Excel file into a DataSet.")]
+        public DataSet CsvTextToDataSet([Description("In-memory CSV text to convert.")]string csvText, [Description("Optional settings.")]ExcelToDataOptions handlerOptions, [Description("DataTable name.")]string tableName)
+        {
+            bool useHeadings = handlerOptions?.UseHeadings ?? this.DefaultOptions.UseHeadings;
+            int maxRows = handlerOptions?.MaxRows ?? this.DefaultOptions.MaxRows;
+            List<string> columnsToDateTime = handlerOptions?.ColumnsToDateTime ?? new List<string>();
+            List<string> columnsToNumber = handlerOptions?.ColumnsToNumber ?? new List<string>();
+
+            string outputDateFormat = handlerOptions?.OutputDateFormat ?? "yyyy-MM-dd";
+            string outputDateTimeFormat = handlerOptions?.OutputDateTimeFormat ?? "yyyy-MM-dd hh:mm:ss";
+            bool outputDateOnly = handlerOptions?.OutputDateOnly ?? false;
+
+            // 1.0.4 2024-02-04 SNJW add CSV-specific options
+            bool csvWrapAll = handlerOptions?.CsvWrapAll ?? false;
+            string csvFormat = handlerOptions?.CsvFormat ?? "UTF-8 (Comma delimited)";
+            string csvNewLine = handlerOptions?.CsvNewLine ?? "\r\n";
+
+            DataSet output = new();
+            DataTable table = new();
+            if(!this.IsValidWorksheetName(tableName))
+                tableName = "Sheet1";
+            table.TableName=tableName;
+
+            bool addDateCellStyle = false;
+            bool addNumberCellStyle = false;
+
+            // split the text into lines
+            string[] lines = csvText.Split(csvNewLine);
+            List<string> toprow = this.GetCsvFields(lines[0], csvWrapAll);
+            if(toprow.Count==0)
+                return output;
+            int startLine = 0;
+            if(useHeadings)
+                startLine = 1;
+
+            for (int i = 0; i < toprow.Count; i++)
+            {
+                System.Data.DataColumn newColumn = new ();
+                if(useHeadings)
+                {
+                    newColumn.ColumnName = this.SanitiseFieldName(toprow[i]);
+                }
+                else
+                {
+                    newColumn.ColumnName = "Column" + i.ToString();
+                }
+                table.Columns.Add(newColumn);
+            }
+
+            for (int i = startLine; i < lines.Length; i++)
+            {
+                System.Data.DataRow newRow = table.NewRow();
+                var rowItems = this.GetCsvFields(lines[i], csvWrapAll);
+                for (int j = 0; j < table.Columns.Count; j++)
+                {
+                    // 
+                    if(j < rowItems.Count)
+                    {
+                        newRow[j] = rowItems[j];
+                    }
+                    else
+                    {
+                        newRow[j] = "";
+                    }
+                }
+                table.Rows.Add(newRow);
+            }
+            output.Tables.Add(table);
+            return output;
+        }
+
+        private List<string> GetCsvFields(string lineText, bool csvWrapAll)
+        {
+            // please draft a method in C# called GetCsvFields that takes parameters lineText as a string and csvWrapAll as a bool and returns a List<string>.
+            // this method iterates through each character in lineText and if csvWrapAll is false then returns one item in output for each comma-separated value except where wrapped with " characters
+            // if csvWrapAll is true then only insert fields into the output which are wrapped in " characters 
+
+            var fields = new List<string>();
+            bool insideQuotes = false;
+            var currentField = "";
+
+            for (int i = 0; i < lineText.Length; i++)
+            {
+                char c = lineText[i];
+                
+                // Toggle insideQuotes flag when a quote is encountered
+                if (c == '"')
+                {
+                    insideQuotes = !insideQuotes;
+                    
+                    // If csvWrapAll is true, do not treat quotes as part of the field value
+                    if (csvWrapAll)
+                        continue;
+                }
+
+                // Handle field separation
+                if (c == ',' && !insideQuotes)
+                {
+                    if (!csvWrapAll || (csvWrapAll && currentField.StartsWith("\"") && currentField.EndsWith("\"")))
+                    {
+                        // Remove wrapping quotes if present
+                        fields.Add(csvWrapAll ? currentField.Substring(1, currentField.Length - 2) : currentField);
+                    }
+                    currentField = "";
+                }
+                else
+                {
+                    currentField += c;
+                }
+            }
+
+            // Add the last field if not empty
+            if (!string.IsNullOrEmpty(currentField))
+            {
+                if (!csvWrapAll || (csvWrapAll && currentField.StartsWith("\"") && currentField.EndsWith("\"")))
+                {
+                    // Remove wrapping quotes if present and needed
+                    fields.Add(csvWrapAll ? currentField.Substring(1, currentField.Length - 2) : currentField);
+                }
+            }
+
+            return fields;
+        }
+        
+
+
+        #endregion csv-handling
 
 
 

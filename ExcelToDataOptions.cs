@@ -85,6 +85,19 @@ namespace Seamlex.Utilities
 
         // CultureInfo[] cultures = { CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-AU") };
 
+        ///<summary>CSV output format.</summary>
+        [Description("CSV output format type.")]
+        public string CsvFormat {get;set;}
+
+        ///<summary>Wrap all CSV output in \"\" characters.</summary>
+        [Description("Wrap all CSV output in \"\" characters.")]
+        public bool CsvWrapAll {get;set;}
+
+
+        ///<summary>CSV newline characters.</summary>
+        [Description("CSV newline characters.")]
+        public string CsvNewLine {get;set;}
+
 
         ///<summary>How to handle text-to-number conversions creating an invalid number.</summary>
         [Description("How to handle text-to-number conversion.")]

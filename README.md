@@ -6,9 +6,43 @@ Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 
 # Version History
 
-1.0.0 Initial release
 
+-----------
+1.0.4 Added CSV input/output
+-----------
+
+8 - Added CSV readinhg/writing
+https://github.com/simonnjwalker/ExcelToData/issues/8
+
+
+
+-----------
+1.0.3 Fixed issues where OpenXML skips blank cells and infering tablename from type
+-----------
+
+Fixed to correctly skip blank cells in headers and in data
+https://github.com/simonnjwalker/ExcelToData/issues/6
+
+7 - fixed to should infer the worksheet name <T> when List<T> is the required output
+https://github.com/simonnjwalker/ExcelToData/issues/7
+
+
+
+-----------
+1.0.2 Fixed columns and allowed indexes for sheets
+-----------
+
+4 - fixed to check header row for merged, missing, and duplicated field names
+https://github.com/simonnjwalker/ExcelToData/issues/4
+
+5 - added sheet indexes to ToDataTable()
+https://github.com/simonnjwalker/ExcelToData/issues/5
+
+
+
+-----------
 1.0.1 Fixed bugs:
+-----------
 
 1 - name of method public List<T> ToDataTable<T> should be ToListData<T>
 - fixed 
@@ -23,24 +57,11 @@ Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 - this is the default behaviour, change it with:
 xlsx.GetOptions().ComplexToJson = false;
 
-1.0.2 Fixed columns and allowed indexes for sheets
-
-4 - fixed to check header row for merged, missing, and duplicated field names
-https://github.com/simonnjwalker/ExcelToData/issues/4
-
-5 - added sheet indexes to ToDataTable()
-https://github.com/simonnjwalker/ExcelToData/issues/5
 
 
-1.0.3 Fixed issues where OpenXML skips blank cells and infering tablename from type
-
-Fixed to correctly skip blank cells in headers and in data
-https://github.com/simonnjwalker/ExcelToData/issues/6
-
-7 - fixed to should infer the worksheet name <T> when List<T> is the required output
-https://github.com/simonnjwalker/ExcelToData/issues/7
-
-
+-----------
+1.0.0 Initial release
+-----------
 
 
 
