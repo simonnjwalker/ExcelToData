@@ -89,7 +89,6 @@ namespace Seamlex.Utilities
         [Description("Last error message if one occurred during processing.")]
         public string ErrorMessage = "";
 
-
         /// <summary>Convert the first column of the first worksheet in an Excel file into a list of strings.</summary>
         /// <param name="filePath">Full path and name of the Excel XLSX document.</param>
         [Description("Convert the first column of the first worksheet in an Excel file into a list of strings.")]
@@ -676,16 +675,13 @@ namespace Seamlex.Utilities
                     // Create a new spreadsheet document
                     using (SpreadsheetDocument spreadsheet = SpreadsheetDocument.Create(memoryStream, SpreadsheetDocumentType.Workbook))
                     {
+
                         // Add a WorkbookPart to the document
                         WorkbookPart workbookPart = spreadsheet.AddWorkbookPart();
                         workbookPart.Workbook = new Workbook();
 
-                        // Add a WorksheetPart to the WorkbookPart
-                        WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                        worksheetPart.Worksheet = new Worksheet(new SheetData());
-
                         // Add Sheets to the Workbook
-                        Sheets sheets = spreadsheet.WorkbookPart.Workbook.AppendChild(new Sheets());
+                        Sheets sheets = workbookPart.Workbook.AppendChild(new Sheets());
                         int tableid = 0;
 
                         // we have to do some work to format dates
@@ -705,11 +701,19 @@ namespace Seamlex.Utilities
                                 if(dataSet.Tables.Cast<DataTable>().Any(table => table.TableName == tableName))
                                     tableName = System.Guid.NewGuid().ToString().Replace("-","").Substring(0,31);
                             }
-                            Sheet sheet = new Sheet() { Id = spreadsheet.WorkbookPart.GetIdOfPart(worksheetPart), SheetId = new DocumentFormat.OpenXml.UInt32Value((uint)tableid), Name = tableName };
+
+                            // Add a WorksheetPart to the WorkbookPart
+                            WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                            worksheetPart.Worksheet = new Worksheet(new SheetData());
+
+                            Sheet sheet = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = new DocumentFormat.OpenXml.UInt32Value((uint)tableid), Name = tableName };
                             sheets.Append(sheet);
 
                             // Get the sheetData cell table
+                            // 2024-03-07 SNJW why are we not creating a new one each time?
+                            // this seems to be grabbing the data from the first sheet and appending it
                             SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+                            //SheetData sheetData = new();
 
                             // Add the header row
                             if(useHeadings)
@@ -732,7 +736,7 @@ namespace Seamlex.Utilities
                                 else
                                 {
                                     cell.DataType = CellValues.String;
-                                    cell.CellValue = new CellValue(cellValue);
+                                    cell.CellValue = new- CellValue(cellValue);
                                 }
 
                                 */
@@ -782,9 +786,14 @@ namespace Seamlex.Utilities
                                 }
                                 sheetData.AppendChild(newRow);
                                 rowcount++;
+                            
                             }
-
+                            //sheet.Append(sheetData);
                         }
+
+                        // Save the changes to the workbook part
+                        workbookPart.Workbook.Save();
+                        GC.Collect();
 
                         // Save the changes
                         // workbookPart.Workbook.Save();
@@ -811,7 +820,6 @@ namespace Seamlex.Utilities
             stylesPart.Stylesheet = this.CreateBaseStylesheet(handlerOptions);
             spreadsheet.WorkbookPart.WorkbookStylesPart.Stylesheet.Save();
         }
-        
 
         // derived from: https://jason-ge.medium.com/create-excel-using-openxml-in-net-6-3b601ddf48f7
         private Stylesheet CreateBaseStylesheet()
@@ -1197,73 +1205,18 @@ namespace Seamlex.Utilities
                             SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
                             // Add the columns
-                            int columnIndex = 0;
-                            int columnTotal = 0;
                             int skipFirst = 1;
 
                             // 2024-01-31 SNJW there is an issue with blank values
                             // so need to get the index of the last value in the first row and fill in the gaps
-                            List<string> columnNames = GetColumnNames(workbookPart,sheetData.Descendants<Row>().First(),useHeadings);
+                            var firstRow = sheetData.Descendants<Row>().First();
+                            List<string> columnNames = GetColumnNames(workbookPart,firstRow,useHeadings);
                             foreach(var columnName in columnNames)
                                 dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
-                            columnTotal = dataTable.Columns.Count;
-
-
-
-
-
-            //                 if(useHeadings)
-            //                 {
-            //                     Row headerRow = sheetData.Descendants<Row>().First();
-            //                     if(headerRow.HasChildren==true)
-            //                     {
-            //                         foreach (Cell cell in headerRow.Descendants<Cell>())
-            //                         {
-            // // 2022-09-01 1.0.2 #3 SNJW if the column is merged or blank then give it a placeholder name
-            // // this is okay as it will not align with 
-            //                             string columnName = (GetCellValue(workbookPart, cell) ?? "").ToString();
-            //                             if(!this.CanAddColumn(dataTable,columnName))
-            //                             {
-            //                                 if(columnIndex==0)
-            //                                 {
-            //                                     columnName = defaultColumnName;
-            //                                 }
-            //                                 else
-            //                                 {
-            //                                     // columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower().Substring(0,31);
-            //                                     columnName = System.Guid.NewGuid().ToString().Replace("-","").ToLower()[..31];                                                
-            //                                 }
-            //                             }
-            //                             dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
-            //                             columnIndex++;
-            //                             columnTotal++;
-            //                         }
-            //                     }
-            //                     else
-            //                     {
-            //                         dataTable.Columns.Add(new DataColumn(defaultColumnName, typeof(string)));
-            //                         columnIndex++;
-            //                     }
-            //                 }
-            //                 else
-            //                 {
-            //                     skipFirst = 0;
-            //                     Row firstRow = sheetData.Descendants<Row>().First();
-            //                     for(int i = 0; i<firstRow.Descendants().Count(); i++)
-            //                     {
-            //                         string columnName = defaultColumnName.TrimEnd('1') + i.ToString().PadLeft(3,'0');
-            //                         dataTable.Columns.Add(new DataColumn(columnName, typeof(string)));
-            //                         columnIndex++;
-            //                     }
-            //                 }
-
-
-                            
+                            int columnTotal = dataTable.Columns.Count;
 
                             // Add the data rows
                             int rowcount = 0;
-//                            foreach (Row row in sheetData.Elements<Row>().Skip(skipFirst))
-// row.Descendants<Cell>().ElementAt(i)
                             foreach (Row row in sheetData.Descendants<Row>().Skip(skipFirst))
                             {
                                 rowcount++;
@@ -1271,7 +1224,6 @@ namespace Seamlex.Utilities
                                     break;
 
                                 DataRow dataRow = dataTable.NewRow();
-                                columnIndex = 0;
 
                                 // 2024-01-31 SNJW there is an issue with blank cells where OpenXML simply will not detect them
                                 int descendantCount = row.Descendants<Cell>().Count();
@@ -1327,39 +1279,6 @@ namespace Seamlex.Utilities
                                     }
                                 }
 
-
-
-
-
-
-
-
-// //                                foreach (Cell cell in row.Elements<Cell>())
-//                                 for(int i = 0; i < columnTotal; i++) // 
-//                                 {
-//                                     Cell cell = null;
-//                                     try
-//                                     {
-//                                         cell = row.Descendants<Cell>().ElementAt(i);
-//                                     }
-//                                     catch
-//                                     {
-
-//                                     }
-//                                     if(cell == null)
-//                                     {
-//                                         dataRow[columnIndex] = "";
-//                                     }
-//                                     else
-//                                     {
-//                                         string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
-//                                         dataRow[columnIndex] = cellValue;
-//                                     }
-//                                     columnIndex++;
-//                                 }
-
-
-
                                 dataTable.Rows.Add(dataRow);
                             }
 
@@ -1386,8 +1305,11 @@ namespace Seamlex.Utilities
 
             if(descendantCount==0)
                 return output;
-            
-            int lastCellIndex = GetCellIndex(row.Descendants<Cell>().Last().CellReference);
+
+            var lastCell = row.Descendants<Cell>().Last();
+            int lastCellIndex = descendantCount - 1;
+            if(lastCell.CellReference != null)
+                lastCellIndex = GetCellIndex(lastCell.CellReference);
 
             // if these align 1-to-1, we can cycle through them or use default names
             if(descendantCount == ( lastCellIndex + 1))
@@ -2915,8 +2837,8 @@ Be named "History". This is a reserved word Excel uses internally.
                 tableName = "Sheet1";
             table.TableName=tableName;
 
-            bool addDateCellStyle = false;
-            bool addNumberCellStyle = false;
+            // bool addDateCellStyle = false;
+            // bool addNumberCellStyle = false;
 
             // split the text into lines
             string[] lines = csvText.Split(csvNewLine);
@@ -3015,12 +2937,8 @@ Be named "History". This is a reserved word Excel uses internally.
 
             return fields;
         }
-        
-
 
         #endregion csv-handling
-
-
 
     }
 }
