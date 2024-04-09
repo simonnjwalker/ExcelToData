@@ -5,7 +5,7 @@
     <Nullable>disable</Nullable>
     <NoWarn>CS8981</NoWarn>
     <PackageId>Seamlex.Utilities.ExcelToData</PackageId>
-    <PackageVersion>1.0.5</PackageVersion>
+    <PackageVersion>1.0.6</PackageVersion>
     <Authors>Simon Walker</Authors>
     <Company>Seamlex</Company>
     <Description>Converts to-and-from simple Excel files.</Description>

@@ -1274,7 +1274,12 @@ namespace Seamlex.Utilities
                                         {
                                             string cellValue = (GetCellValue(workbookPart, cell) ?? "").ToString();
                                             int cellIndex = GetCellIndex(cell.CellReference);
-                                            dataRow[cellIndex] = cellValue;
+
+                                            // 2024-04-09 SNJW Error where row in spreadsheet contains additional items #11
+                                            // fixed in 1.0.6
+                                            // dataRow[cellIndex] = cellValue;
+                                            if(cellIndex < dataRow.ItemArray.Length)
+                                                dataRow[cellIndex] = cellValue;
                                         }
                                     }
                                 }
@@ -1311,86 +1316,113 @@ namespace Seamlex.Utilities
             if(lastCell.CellReference != null)
                 lastCellIndex = GetCellIndex(lastCell.CellReference);
 
-            // if these align 1-to-1, we can cycle through them or use default names
-            if(descendantCount == ( lastCellIndex + 1))
-            {
-                if(useHeadings)
-                {
-                    // use the headings if they are unique
-                    for(int i = 0; i < descendantCount; i++) // 
-                    {
-                        Cell cell = null;
-                        try
-                        {
-                            cell = row.Descendants<Cell>().ElementAt(i);
-                        }
-                        catch
-                        {
 
-                        }
-                        string headingName = $"Column{i+1}";
-                        if(cell != null)
+            // 2024-04-09 SNJW Error where a blank cell is in a header row #10
+            // fixed in 1.0.6
+
+            // if these align 1-to-1, we can cycle through them or use default names
+            // however, if there is a gap then they will not
+            if(descendantCount < ( lastCellIndex + 1))
+            {
+                int maxDescendants = 0;
+
+                // check the first row regardles of whether this is a header
+                for(int i = 0; i < descendantCount; i++) // 
+                {
+                    Cell cell = null;
+                    try
+                    {
+                        cell = row.Descendants<Cell>().ElementAt(i);
+                    }
+                    catch
+                    {
+
+                    }
+                    if(cell == null)
+                        continue;
+                    maxDescendants++;
+                }
+                descendantCount = maxDescendants;
+            }
+
+
+            if(useHeadings)
+            {
+                // use the headings if they are unique
+                for(int i = 0; i < descendantCount; i++) // 
+                {
+                    Cell cell = null;
+                    try
+                    {
+                        cell = row.Descendants<Cell>().ElementAt(i);
+                    }
+                    catch
+                    {
+
+                    }
+                    string headingName = $"Column{i+1}";
+                    if(cell != null)
+                    {
+                        string cellValue = (GetCellValue((WorkbookPart)workbookPart, cell) ?? "").ToString();
+                        if(cellValue=="")
                         {
-                            string cellValue = (GetCellValue((WorkbookPart)workbookPart, cell) ?? "").ToString();
-                            if(cellValue=="")
-                            {
+                            cellValue = headingName;
+                        }
+                        else if(cellValue.Length==1)
+                        {
+                            if(!char.IsLetterOrDigit(cellValue[0]))
                                 cellValue = headingName;
-                            }
-                            else if(cellValue.Length==1)
+                        }
+                        else
+                        {
+                            string fieldCheck = "";
+                            for(int j = 0; j < cellValue.Length; j++)
                             {
-                                if(!char.IsLetterOrDigit(cellValue[0]))
-                                    cellValue = headingName;
-                            }
-                            else
-                            {
-                                string fieldCheck = "";
-                                for(int j = 0; j < cellValue.Length; j++)
+                                if(j == 0)
                                 {
-                                    if(j == 0)
+                                    if(char.IsLetter(cellValue[0]))
                                     {
-                                        if(char.IsLetter(cellValue[0]))
-                                        {
-                                            fieldCheck = cellValue[0].ToString();
-                                        }
-                                        else
-                                        {
-                                            fieldCheck = "_";
-                                        }
+                                        fieldCheck = cellValue[0].ToString();
                                     }
                                     else
                                     {
-                                        if(!char.IsLetterOrDigit(cellValue[j]))
-                                        {
-                                            fieldCheck += "_";
-                                        }
-                                        else
-                                        {
-                                            fieldCheck += cellValue[j];
-                                        }
+                                        fieldCheck = "_";
                                     }
                                 }
-                                if(fieldCheck.Length>64)
-                                    fieldCheck = fieldCheck.Substring(0,64);
-                                cellValue = fieldCheck;
+                                else
+                                {
+                                    if(!char.IsLetterOrDigit(cellValue[j]))
+                                    {
+                                        fieldCheck += "_";
+                                    }
+                                    else
+                                    {
+                                        fieldCheck += cellValue[j];
+                                    }
+                                }
                             }
-
-                            if(output.Exists(x => x.Equals(cellValue)))
-                                cellValue = headingName;
-                            headingName = cellValue;
+                            if(fieldCheck.Length>64)
+                                fieldCheck = fieldCheck.Substring(0,64);
+                            cellValue = fieldCheck;
                         }
 
-                        if(output.Exists(x => x.Equals(headingName)))
-                            headingName = System.Guid.NewGuid().ToString().Replace("-","").ToLower();
-                        output.Add(headingName);
+                        if(output.Exists(x => x.Equals(cellValue)))
+                            cellValue = headingName;
+                        headingName = cellValue;
                     }
-                }
-                else
-                {
-                    // use the default column names
-                    for (int i = 0; i < descendantCount; i++)
-                        output.Add($"Column{i+1}");
+
+                    if(output.Exists(x => x.Equals(headingName)))
+                        headingName = System.Guid.NewGuid().ToString().Replace("-","").ToLower();
+                    output.Add(headingName);
                 }
             }
+            else
+            {
+                // use the default column names
+                for (int i = 0; i < descendantCount; i++)
+                    output.Add($"Column{i+1}");
+            }
+            
             return output;
         }
 

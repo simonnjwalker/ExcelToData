@@ -1,3 +1,12 @@
+## [1.0.6] - 2024-04-09
+### Fixed
+- No longer errors when a row in an XLSX contains data beyound the right-most column
+https://github.com/simonnjwalker/ExcelToData/issues/11
+
+- No longer errors when the first row has blanks
+https://github.com/simonnjwalker/ExcelToData/issues/10
+
+
 ## [1.0.5] - 2024-03-09
 ### Fixed
 - No longer duplicates all rows were a DataSet has more than one table.
