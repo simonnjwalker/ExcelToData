@@ -5,10 +5,10 @@ A general-purpose XLSX-to-.NET data conversion tool.
 Sample code to manipulate List<t>, byte[], and DataTable objects is below.
 
 ## Project Details
-This tool has been built to solve ad hoc problems that arise in life involving Excel documents.  Microsoft Excel is the 'hammer and tongs of the Information Age'.  Robust, repeatable, open-source, and memory-safe manipulation of XLSX files remains a goal even in a post-LLM world. 
+This tool has been built to solve ad hoc problems that arise in life involving Excel documents.  Microsoft Excel is the 'hammer and tongs of the Information Age'.  Robust, repeatable, open-source, and memory-safe manipulation of XLSX files is still a handy trick even in a post-LLM world.
 
 ## Usage
-A compiled version of this sists on Nuget:
+A compiled version of this sits on Nuget:
 https://www.nuget.org/packages/Seamlex.Utilities.ExcelToData
 
 ## Installation
@@ -85,6 +85,16 @@ This is a class library that can be added to a project with:
         
     }
 
+## Updating GitHub + NuGet
+To create a new version:
+1 Update the CHANGELOG.md with the new version
+2 Update the PackageVersion field in ExcelToData.csproj
+3 Run this in the CLI to push to GitHub:
+    dotnet build
+    git add .
+    git commit -m "1.x.y Fixed XYZ issue"
+    git push
+4 Run this in the CLI to push to Nuget:
+    dotnet pack
+    dotnet nuget push {sourcepath}\ExcelToData\bin\Debug\Seamlex.Utilities.ExcelToData.{version in format "1.x.y"}.nupkg --api-key {APIkey} --source https://api.nuget.org/v3/index.json
 
-
-    

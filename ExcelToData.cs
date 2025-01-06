@@ -2098,6 +2098,16 @@ Be named "History". This is a reserved word Excel uses internally.
                 {
                     destValue = this.ParseExcelBoolNullable(sourceValue, handlerOptions);
                 }
+                else if(destType == typeof(Guid))
+                {
+                    // 2025-01-06 1.0.7 #13 SNJW Fix System.Guid conversions                    
+                    destValue = this.ParseExcelGuid(sourceValue, handlerOptions);
+                }
+                else if(destType == typeof(Guid?))
+                {
+                    // 2025-01-06 1.0.7 #13 SNJW Fix System.Guid conversions                    
+                    destValue = this.ParseExcelGuidNullable(sourceValue, handlerOptions);
+                }
                 else if(!this.IsCLRType(destType))
                 {
                     // 2023-07-14 SNJW if this is a non-CLR type then either set it to JSON or to blank
@@ -2120,10 +2130,13 @@ Be named "History". This is a reserved word Excel uses internally.
                     {
                         destValue = (object)Convert.ChangeType(sourceValue, destType);
                     }
-                    catch (FormatException)
+                    catch
                     {
+                        // 2025-01-06 1.0.7 #13 SNJW This needs to fail quietly - changed FormatException to ALL exceptions
+
                         // silently fail here
                     }
+
                 }
                 return destValue;
             }
@@ -2251,7 +2264,7 @@ Be named "History". This is a reserved word Excel uses internally.
         /// <param name="sourceValue">Source value from Excel.</param>
         /// <param name="handlerOptions">Settings to modify this action.</param>
         [Description("Parses an Excel data value and returns its true/false status.")]
-        public bool ParseExcelBool([Description("Source date/time value from Excel.")]object sourceValue,[Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        public bool ParseExcelBool([Description("Source value from Excel.")]object sourceValue,[Description("Optional settings.")]ExcelToDataOptions handlerOptions)
         {
             Type sourceType = sourceValue.GetType();
             string checkstring = sourceValue?.ToString().Trim();
@@ -2278,9 +2291,68 @@ Be named "History". This is a reserved word Excel uses internally.
         /// <summary>Parses an Excel data value and returns its true/false status.</summary>
         /// <param name="sourceValue">Source value from Excel.</param>
         [Description("Parses an Excel data value and returns its true/false status.")]
-        public bool ParseExcelBool([Description("Source date/time value from Excel.")]object sourceValue)
+        public bool ParseExcelBool([Description("Source value from Excel.")]object sourceValue)
         {
             return this.ParseExcelBool(sourceValue,this.DefaultOptions);
+        }
+
+        // 2025-01-06 1.0.7 #13 SNJW Fix System.Guid conversions
+        // This required creating new Parse methods to handle different formats and values
+        /// <summary>Parses an Excel data value and return a nullable global identifier (System.Guid).</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        [Description("Parses an Excel data value and returns a global identifier (Guid).")]
+        public System.Guid? ParseExcelGuidNullable([Description("Source value from Excel.")]object sourceValue)
+        {
+            return this.ParseExcelGuidNullable(sourceValue,this.DefaultOptions);
+        }
+        /// <summary>Parses an Excel data value and return a nullable global identifier (System.Guid).</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Parses an Excel data value and returns a global identifier (Guid).")]
+        public System.Guid? ParseExcelGuidNullable([Description("Source value from Excel.")]object sourceValue, [Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            if(sourceValue == null)
+                return null;
+            if(sourceValue.ToString().ToLower() == "null"
+                || sourceValue.ToString().ToLower() == "\"null\""
+                || sourceValue.ToString().ToLower().Trim() == "\"\""
+                || sourceValue.ToString().Trim() == ""
+            )
+                return null;
+            return (System.Guid?)ParseExcelGuid(sourceValue,handlerOptions);
+        }
+
+        /// <summary>Parses an Excel data value and return a non-null global identifier (System.Guid).</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        /// <param name="handlerOptions">Settings to modify this action.</param>
+        [Description("Parses an Excel data value and returns a global identifier (Guid).")]
+        public System.Guid ParseExcelGuid([Description("Source value from Excel.")]object sourceValue,[Description("Optional settings.")]ExcelToDataOptions handlerOptions)
+        {
+            Type sourceType = sourceValue.GetType();
+            string checkstring = sourceValue?.ToString().Trim().ToLower();
+            if(checkstring == ""
+                || checkstring == "null"
+                || checkstring == "\"null\""
+                || checkstring == "\"\""
+                || checkstring.Trim('0') == ""
+                || checkstring.Trim('"').Trim('0') == ""
+            )
+                return Guid.Empty;
+            var cleanedstring = new string(checkstring.Where(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')).ToArray());
+            // Check if the cleaned string is exactly 32 characters long
+            if (cleanedstring.Length == 32)
+            {
+                // Parse the string as a GUID in the "N" format
+                return Guid.ParseExact(cleanedstring, "N");
+            }
+            return Guid.Empty;
+        }
+        /// <summary>Parses an Excel data value and return a non-null global identifier (System.Guid).</summary>
+        /// <param name="sourceValue">Source value from Excel.</param>
+        [Description("Parses an Excel data value and returns a global identifier (Guid).")]
+        public System.Guid ParseExcelGuid([Description("Source value from Excel.")]object sourceValue)
+        {
+            return this.ParseExcelGuid(sourceValue,this.DefaultOptions);
         }
 
         /// <summary>Parses an Excel date/time value and returns its nullable CLR DateTime value.</summary>

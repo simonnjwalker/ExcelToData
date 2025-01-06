@@ -1,8 +1,12 @@
+## [1.0.7] - 2025-01-06
+### Fixed
+- Now parses Guids without erroring
+https://github.com/simonnjwalker/ExcelToData/issues/13
+
 ## [1.0.6] - 2024-04-09
 ### Fixed
 - No longer errors when a row in an XLSX contains data beyound the right-most column
 https://github.com/simonnjwalker/ExcelToData/issues/11
-
 - No longer errors when the first row has blanks
 https://github.com/simonnjwalker/ExcelToData/issues/10
 
